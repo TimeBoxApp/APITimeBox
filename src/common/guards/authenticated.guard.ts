@@ -23,6 +23,6 @@ export class AuthenticatedGuard implements CanActivate {
       throw new UnauthorizedException('You need to authorize to access this endpoint');
     }
 
-    return request.isAuthenticated();
+    return true;
   }
 }
