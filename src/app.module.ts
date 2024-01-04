@@ -1,9 +1,10 @@
-import { join } from 'path';
 import { DataSource } from 'typeorm';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -13,28 +14,36 @@ import { HealthModule } from './health/health.module';
 import { QueryFailedFilter } from './common/filters/query-failed.filter';
 import { AuthenticatedGuard } from './common/guards/authenticated.guard';
 import { RolesGuard } from './common/guards/roles.guard';
-import * as process from 'process';
+import { dataSourceOptions } from '../db/data-source';
 
 @Module({
   imports: [
+    PassportModule.register({
+      defaultStrategy: 'local',
+      session: true
+    }),
     UserModule,
     AuthModule,
     HealthModule,
     ConfigModule.forRoot(),
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: process.env.DATABASE_HOST,
-      // @ts-expect-error
-      port: process.env.DATABASE_PORT || 3306,
-      username: process.env.DATABASE_USER,
-      password: process.env.DATABASE_PASSWORD,
-      database: process.env.DATABASE_NAME,
-      entities: [join(__dirname, '**', '*.entity.{ts,js}')],
-      synchronize: true
-      // ssl: {
-      //   rejectUnauthorized: true
-      // }
-    })
+    TypeOrmModule.forRoot(dataSourceOptions),
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 1000,
+        limit: 3
+      },
+      {
+        name: 'medium',
+        ttl: 10000,
+        limit: 20
+      },
+      {
+        name: 'long',
+        ttl: 60000,
+        limit: 100
+      }
+    ])
   ],
   controllers: [AppController],
   providers: [
@@ -50,6 +59,10 @@ import * as process from 'process';
     {
       provide: APP_GUARD,
       useClass: RolesGuard
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard
     }
   ]
 })

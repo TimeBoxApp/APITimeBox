@@ -13,11 +13,20 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "lint:fix": "eslint ./ --fix --ext .js --ext .ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "typeorm": "yarn run build && npx typeorm -d dist/db/data-source.js",
+    "migration:generate": "yarn run typeorm migration:generate",
+    "migration:run": "yarn run typeorm migration:run",
+    "migration:revert": "yarn run typeorm migration:revert",
+    "prepare": "husky install"
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -27,6 +36,7 @@
     "@nestjs/mapped-types": "*",
     "@nestjs/passport": "^10.0.2",
     "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/throttler": "^5.1.1",
     "@nestjs/typeorm": "^10.0.1",
     "@types/bcrypt": "^5.0.2",
     "@types/express-session": "^1.17.10",
@@ -36,13 +46,15 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
     "express-session": "^1.17.3",
+    "helmet": "^7.1.0",
+    "lint-staged": "^15.2.0",
     "mysql2": "^3.6.5",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
-    "typeorm": "^0.3.17"
+    "typeorm": "^0.3.19"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
@@ -57,6 +69,7 @@
     "eslint": "^8.42.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
+    "husky": "^8.0.0",
     "jest": "^29.5.0",
     "prettier": "^3.0.0",
     "source-map-support": "^0.5.21",

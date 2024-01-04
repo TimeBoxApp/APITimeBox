@@ -19,7 +19,7 @@ export enum UserSex {
   OTHER = 'other'
 }
 
-@Entity()
+@Entity('User')
 export class User extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
