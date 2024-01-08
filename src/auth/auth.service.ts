@@ -1,9 +1,9 @@
 import { compare } from 'bcrypt';
 import { Request } from 'express';
-import { BadRequestException, Injectable, NotFoundException, Req } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable, NotFoundException, Req } from '@nestjs/common';
 
 import { UserService } from '../user/user.service';
-import { UserStatus } from '../user/entities/user.entity';
+import { UserStatus, UserRequest } from '../user/entities/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -25,19 +25,25 @@ export class AuthService {
     }
 
     return {
-      userId: user.id,
-      email: user.email,
-      role: user.role
+      userId: user.id
     };
   }
 
-  async login(): Promise<string> {
-    return 'Login successful';
+  async login(request: UserRequest): Promise<object> {
+    const userData = await this.userService.getUserData(request);
+
+    return {
+      statusCode: HttpStatus.OK,
+      userData
+    };
   }
 
   async logout(@Req() request: Request): Promise<any> {
-    request.session.destroy(() => {
-      return 'Logout successful';
-    });
+    request.session.destroy(() => {});
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Logout successful'
+    };
   }
 }

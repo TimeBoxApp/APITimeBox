@@ -1,9 +1,9 @@
 import { hash } from 'bcrypt';
 import { Repository } from 'typeorm';
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { User } from './entities/user.entity';
+import { User, UserRequest, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -16,9 +16,9 @@ export class UserService {
     private userRepository: Repository<User>
   ) {}
 
-  public async createUser(createUserDto: CreateUserDto): Promise<string> {
+  public async createUser(createUserDto: CreateUserDto): Promise<object> {
     const { password, email } = createUserDto;
-    const isExistingUser = await this.userRepository.exist({ where: { email } });
+    const isExistingUser = await this.userRepository.exists({ where: { email } });
 
     this.logger.error(`User with email ${email} already exists`);
 
@@ -36,7 +36,10 @@ export class UserService {
 
     this.logger.log(`Successfully created user ${result.id} with email ${email}`);
 
-    return 'OK';
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: `Successfully created user ${result.id} with email ${email}`
+    };
   }
 
   public async getUsers(): Promise<User[]> {
@@ -77,6 +80,41 @@ export class UserService {
         role: true
       }
     });
+  }
+
+  public async getUserData(request: UserRequest): Promise<User | null> {
+    const { user } = request;
+
+    if (!user) throw BadRequestException;
+
+    const { userId } = user;
+
+    return await this.userRepository.findOne({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true
+      }
+    });
+  }
+
+  public async getUserRole(id: number | null): Promise<UserRole | null> {
+    if (!id) return null;
+
+    const user = await this.userRepository.findOne({
+      where: { id },
+      select: {
+        id: true,
+        role: true
+      }
+    });
+
+    if (!user || !user.role) return null;
+
+    return user.role;
   }
 
   public async editUser(userId: number, updateUserDto: UpdateUserDto): Promise<string> {

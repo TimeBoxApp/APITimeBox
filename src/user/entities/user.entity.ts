@@ -1,5 +1,9 @@
 import { PrimaryGeneratedColumn, BaseEntity, Column, Entity, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
+export interface UserRequest extends Request {
+  user: { userId: number };
+}
+
 export enum UserStatus {
   ACTIVE = 'active',
   SUSPENDED = 'suspended',
@@ -43,7 +47,7 @@ export class User extends BaseEntity {
   status: UserStatus;
 
   @Column('enum', { enum: UserRole, default: UserRole.USER })
-  role: UserStatus;
+  role: UserRole;
 
   @Column('enum', { enum: UserSex, default: null })
   sex: UserSex;

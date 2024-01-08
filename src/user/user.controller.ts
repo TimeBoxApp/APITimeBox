@@ -1,7 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 
 import { UserService } from './user.service';
-import { User, UserRole } from './entities/user.entity';
+import { User, UserRole, UserRequest } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Public } from '../app.controller';
@@ -14,7 +14,7 @@ export class UserController {
 
   @Public()
   @Post('create')
-  public async createUser(@Body() createUserDto: CreateUserDto): Promise<string> {
+  public async createUser(@Body() createUserDto: CreateUserDto): Promise<object> {
     return await this.userService.createUser(createUserDto);
   }
 
@@ -22,6 +22,11 @@ export class UserController {
   @Roles([UserRole.ADMIN])
   public async getUsers(): Promise<User[]> {
     return await this.userService.getUsers();
+  }
+
+  @Get('me')
+  public async getUserData(@Req() request: UserRequest): Promise<User | null> {
+    return await this.userService.getUserData(request);
   }
 
   @UseGuards(UserIsOwnerGuard)

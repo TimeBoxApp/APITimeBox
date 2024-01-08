@@ -4,6 +4,7 @@ import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from '../common/guards/local.auth.guard';
 import { Public } from '../app.controller';
+import { UserRequest } from '../user/entities/user.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -17,7 +18,7 @@ export class AuthController {
   @Public()
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  login(): Promise<string> {
-    return this.authService.login();
+  login(@Req() request: UserRequest): Promise<object> {
+    return this.authService.login(request);
   }
 }

@@ -22,18 +22,19 @@ export class RolesGuard implements CanActivate {
     const { user } = request;
 
     if (user) {
-      const { id } = user;
-      const systemUser = await this.userService.getUserById(id);
+      const { userId } = user;
+      const userRole = await this.userService.getUserRole(userId);
 
-      if (systemUser && !this.matchRoles(roles, systemUser.role)) {
+      if (!this.matchRoles(roles, userRole))
         throw new ForbiddenException('You lack privileges to access this endpoint');
-      }
     }
 
     return true;
   }
 
-  private matchRoles(routeRoles: string[], userRole: string): boolean {
+  private matchRoles(routeRoles: string[], userRole: string | null): boolean {
+    if (!userRole) return false;
+
     return routeRoles.includes(userRole);
   }
 }
