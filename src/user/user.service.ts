@@ -1,11 +1,20 @@
+import * as _ from 'lodash';
 import { hash } from 'bcrypt';
 import { Repository } from 'typeorm';
-import { BadRequestException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnauthorizedException
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { User, UserRequest, UserRole } from './entities/user.entity';
+import { User, UserRequest, UserRole, UserStatus } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { Week, WeekStatus } from '../week/entities/week.entity';
 
 @Injectable()
 export class UserService {
@@ -13,7 +22,10 @@ export class UserService {
 
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>
+    private userRepository: Repository<User>,
+
+    @InjectRepository(Week)
+    private weekRepository: Repository<Week>
   ) {}
 
   public async createUser(createUserDto: CreateUserDto): Promise<object> {
@@ -82,14 +94,8 @@ export class UserService {
     });
   }
 
-  public async getUserData(request: UserRequest): Promise<User | null> {
-    const { user } = request;
-
-    if (!user) throw BadRequestException;
-
-    const { userId } = user;
-
-    return await this.userRepository.findOne({
+  public async getUserData(userId: number): Promise<User | null> {
+    const userEntity = await this.userRepository.findOne({
       where: { id: userId },
       select: {
         id: true,
@@ -99,6 +105,59 @@ export class UserService {
         role: true
       }
     });
+
+    if (!userEntity) throw new UnauthorizedException();
+
+    return userEntity;
+  }
+
+  public async getUserCurrentWeek(userId: number): Promise<Week | object> {
+    const weekWithTasks = await this.weekRepository.findOne({
+      where: { userId, status: WeekStatus.IN_PROGRESS },
+      relations: {
+        tasks: {
+          categories: true
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        startDate: true,
+        endDate: true,
+        tasks: {
+          id: true,
+          title: true,
+          status: true,
+          priority: true,
+          dueDate: true,
+          boardRank: true,
+          categories: {
+            id: true,
+            title: true,
+            emoji: true,
+            color: true
+          }
+        }
+      }
+    });
+
+    if (!weekWithTasks)
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'No current week found'
+      };
+
+    if (weekWithTasks) {
+      const groupedTasks = _.groupBy(weekWithTasks.tasks, 'status');
+
+      for (const status in groupedTasks) {
+        groupedTasks[status] = _.orderBy(groupedTasks[status], ['boardRank'], ['asc']);
+      }
+
+      weekWithTasks.tasks = groupedTasks as any;
+    }
+
+    return weekWithTasks;
   }
 
   public async getUserRole(id: number | null): Promise<UserRole | null> {
@@ -137,6 +196,26 @@ export class UserService {
     this.logger.log(`Successfully deleted user ${userId}`);
 
     return 'OK';
+  }
+
+  public async getUserForRequest(request: UserRequest): Promise<User> {
+    const { user } = request;
+
+    if (!user) throw new UnauthorizedException();
+
+    const { userId } = user;
+
+    const userEntity = await this.userRepository.findOne({
+      where: { id: userId, status: UserStatus.ACTIVE },
+      select: {
+        id: true,
+        role: true
+      }
+    });
+
+    if (!userEntity) throw new UnauthorizedException();
+
+    return userEntity;
   }
 
   private validatePasswordStrength(password: string): boolean {

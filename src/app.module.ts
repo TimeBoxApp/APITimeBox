@@ -15,6 +15,9 @@ import { QueryFailedFilter } from './common/filters/query-failed.filter';
 import { AuthenticatedGuard } from './common/guards/authenticated.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { dataSourceOptions } from '../db/data-source';
+import { TaskModule } from './task/task.module';
+import { WeekModule } from './week/week.module';
+import { CategoryModule } from './category/category.module';
 
 @Module({
   imports: [
@@ -43,7 +46,10 @@ import { dataSourceOptions } from '../db/data-source';
         ttl: 60000,
         limit: 100
       }
-    ])
+    ]),
+    TaskModule,
+    WeekModule,
+    CategoryModule
   ],
   controllers: [AppController],
   providers: [

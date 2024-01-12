@@ -1,6 +1,13 @@
 import { compare } from 'bcrypt';
 import { Request } from 'express';
-import { BadRequestException, HttpStatus, Injectable, NotFoundException, Req } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+  Req,
+  UnauthorizedException
+} from '@nestjs/common';
 
 import { UserService } from '../user/user.service';
 import { UserStatus, UserRequest } from '../user/entities/user.entity';
@@ -30,7 +37,11 @@ export class AuthService {
   }
 
   async login(request: UserRequest): Promise<object> {
-    const userData = await this.userService.getUserData(request);
+    const { user } = request;
+
+    if (!user) throw new UnauthorizedException();
+
+    const userData = await this.userService.getUserData(user.userId);
 
     return {
       statusCode: HttpStatus.OK,

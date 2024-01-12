@@ -1,4 +1,15 @@
-import { PrimaryGeneratedColumn, BaseEntity, Column, Entity, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  PrimaryGeneratedColumn,
+  BaseEntity,
+  Column,
+  Entity,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany
+} from 'typeorm';
+
+import { Task } from '../../task/entities/task.entity';
+import { Category } from '../../category/entities/category.entity';
 
 export interface UserRequest extends Request {
   user: { userId: number };
@@ -51,6 +62,12 @@ export class User extends BaseEntity {
 
   @Column('enum', { enum: UserSex, default: null })
   sex: UserSex;
+
+  @OneToMany(() => Task, (task) => task.user)
+  tasks: Task[];
+
+  @OneToMany(() => Category, (category) => category.user)
+  categories: Category[];
 
   @CreateDateColumn()
   createdAt: Date;

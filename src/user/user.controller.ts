@@ -1,7 +1,19 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UnauthorizedException,
+  UseGuards
+} from '@nestjs/common';
 
 import { UserService } from './user.service';
 import { User, UserRole, UserRequest } from './entities/user.entity';
+import { Week } from '../week/entities/week.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Public } from '../app.controller';
@@ -20,13 +32,30 @@ export class UserController {
 
   @Get('all')
   @Roles([UserRole.ADMIN])
-  public async getUsers(): Promise<User[]> {
+  public async getUsers(@Req() request: UserRequest): Promise<User[]> {
+    const user = await this.userService.getUserForRequest(request);
+
+    if (!user) throw new UnauthorizedException();
+
     return await this.userService.getUsers();
   }
 
   @Get('me')
   public async getUserData(@Req() request: UserRequest): Promise<User | null> {
-    return await this.userService.getUserData(request);
+    const user = await this.userService.getUserForRequest(request);
+
+    if (!user) throw new UnauthorizedException();
+
+    return await this.userService.getUserData(user.id);
+  }
+
+  @Get('currentWeek')
+  public async getUserCurrentWeek(@Req() request: UserRequest): Promise<Week | object> {
+    const user = await this.userService.getUserForRequest(request);
+
+    if (!user) throw new UnauthorizedException();
+
+    return await this.userService.getUserCurrentWeek(user.id);
   }
 
   @UseGuards(UserIsOwnerGuard)
@@ -43,7 +72,11 @@ export class UserController {
 
   @UseGuards(UserIsOwnerGuard)
   @Delete('/delete/:userId')
-  public async deleteUser(@Param('userId') userId: number): Promise<string> {
+  public async deleteUser(@Req() request: UserRequest, @Param('userId') userId: number): Promise<string> {
+    const user = await this.userService.getUserForRequest(request);
+
+    if (!user) throw new UnauthorizedException();
+
     return await this.userService.deleteUser(userId);
   }
 }
