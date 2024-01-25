@@ -1,4 +1,3 @@
-import * as _ from 'lodash';
 import { hash } from 'bcrypt';
 import { Repository } from 'typeorm';
 import {
@@ -15,6 +14,7 @@ import { User, UserRequest, UserRole, UserStatus } from './entities/user.entity'
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Week, WeekStatus } from '../week/entities/week.entity';
+import { TaskService } from '../task/task.service';
 
 @Injectable()
 export class UserService {
@@ -25,7 +25,9 @@ export class UserService {
     private userRepository: Repository<User>,
 
     @InjectRepository(Week)
-    private weekRepository: Repository<Week>
+    private weekRepository: Repository<Week>,
+
+    private readonly taskService: TaskService
   ) {}
 
   public async createUser(createUserDto: CreateUserDto): Promise<object> {
@@ -102,8 +104,16 @@ export class UserService {
         email: true,
         firstName: true,
         lastName: true,
-        role: true
-      }
+        role: true,
+        categories: {
+          id: true,
+          title: true,
+          description: true,
+          color: true,
+          emoji: true
+        }
+      },
+      relations: { categories: true }
     });
 
     if (!userEntity) throw new UnauthorizedException();
@@ -147,15 +157,9 @@ export class UserService {
         message: 'No current week found'
       };
 
-    if (weekWithTasks) {
-      const groupedTasks = _.groupBy(weekWithTasks.tasks, 'status');
+    const tasks = weekWithTasks.tasks;
 
-      for (const status in groupedTasks) {
-        groupedTasks[status] = _.orderBy(groupedTasks[status], ['boardRank'], ['asc']);
-      }
-
-      weekWithTasks.tasks = groupedTasks as any;
-    }
+    weekWithTasks.tasks = this.taskService.groupTasksByStatus(tasks) as any;
 
     return weekWithTasks;
   }

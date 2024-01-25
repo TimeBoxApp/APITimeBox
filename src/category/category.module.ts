@@ -7,9 +7,10 @@ import { UserService } from '../user/user.service';
 import { Category } from './entities/category.entity';
 import { User } from '../user/entities/user.entity';
 import { Week } from '../week/entities/week.entity';
+import { TaskModule } from '../task/task.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Category, User, Week])],
+  imports: [TaskModule, TypeOrmModule.forFeature([Category, User, Week])],
   controllers: [CategoryController],
   providers: [CategoryService, UserService]
 })

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Patch, Param, Delete, Req } from '@nestjs/common';
+import { Controller, Post, Body, Patch, Param, Delete, Req, Get, Query } from '@nestjs/common';
 
 import { TaskService } from './task.service';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -26,10 +26,19 @@ export class TaskController {
   //   return this.taskService.findAll();
   // }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.taskService.findOne(+id);
-  // }
+  @Get(':id')
+  async findOne(@Req() request: UserRequest, @Param('id') id: string) {
+    const user = await this.userService.getUserForRequest(request);
+
+    return this.taskService.findOne(+id, user.id);
+  }
+
+  @Get()
+  async getTasksByWeek(@Req() request: UserRequest, @Query('weekId') weekId: number) {
+    const user = await this.userService.getUserForRequest(request);
+
+    return this.taskService.findTasksByWeekId(+weekId, user.id);
+  }
 
   @Patch(':id')
   async update(@Req() request: UserRequest, @Param('id') id: string, @Body() updateTaskDto: UpdateTaskDto) {

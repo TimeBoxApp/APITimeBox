@@ -1,4 +1,5 @@
-import { Repository } from 'typeorm';
+import * as _ from 'lodash';
+import { Not, Repository } from 'typeorm';
 import { ForbiddenException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -41,6 +42,7 @@ export class TaskService {
     if (user.id !== userId) return new ForbiddenException('User cannot create task for another user');
 
     const task = new Task();
+    const categories = [];
 
     if (weekId) {
       const week = await this.weekRepository.findOneBy({ id: weekId });
@@ -63,17 +65,19 @@ export class TaskService {
 
       if (category.userId != user.id) throw new ForbiddenException('User cannot use this category');
 
-      task.categories.push(category);
+      categories.push(category);
     }
 
     task.title = title;
     task.description = description;
     task.status = status;
     task.priority = priority;
-    task.dueDate = dueDate;
     task.userId = userId;
     task.backlogRank = backlogRank;
     task.boardRank = boardRank;
+    task.categories = categories;
+
+    if (dueDate) task.dueDate = new Date(dueDate);
 
     await this.taskRepository.save(task);
 
@@ -83,10 +87,59 @@ export class TaskService {
   // findAll() {
   //   return `This action returns all task`;
   // }
-  //
-  // findOne(id: number) {
-  //   return `This action returns a #${id} task`;
-  // }
+
+  async findOne(id: number, userId: number) {
+    const task: Task | null = await this.taskRepository.findOne({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        status: true,
+        dueDate: true,
+        priority: true,
+        backlogRank: true,
+        boardRank: true,
+        userId: true,
+        categories: {
+          id: true,
+          title: true,
+          emoji: true,
+          color: true
+        }
+      },
+      relations: { categories: true }
+    });
+
+    if (!task) throw new NotFoundException('Task not found');
+
+    if (userId !== task.userId) throw new ForbiddenException('User cannot access this task');
+
+    return task;
+  }
+
+  async findTasksByWeekId(weekId: number, userId: number) {
+    const tasks: Task[] = await this.taskRepository.find({
+      where: { weekId, userId, status: Not(TaskStatus.CREATED) },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        priority: true,
+        dueDate: true,
+        boardRank: true,
+        categories: {
+          id: true,
+          title: true,
+          emoji: true,
+          color: true
+        }
+      },
+      relations: { categories: true }
+    });
+
+    return { tasks: this.groupTasksByStatus(tasks) };
+  }
 
   async update(id: number, userId: number, updateTaskDto: UpdateTaskDto) {
     const editedTask: Task | null = await this.taskRepository.findOne({
@@ -118,12 +171,24 @@ export class TaskService {
 
     if (userId !== task.userId) throw new ForbiddenException('User cannot delete this task');
 
-    // await this.categoryRepository.delete({ taskId: taskId });
-
     await this.taskRepository.delete({ id: taskId });
 
     this.logger.log(`Successfully removed task ${taskId}`);
 
     return { statusCode: HttpStatus.OK, message: 'OK' };
   }
+
+  /**
+   * Group tasks by status
+   * @param tasks
+   */
+  groupTasksByStatus = (tasks: Task[]) => {
+    const groupedTasks = _.groupBy(tasks, 'status');
+
+    for (const status in groupedTasks) {
+      groupedTasks[status] = _.orderBy(groupedTasks[status], ['boardRank'], ['asc']);
+    }
+
+    return groupedTasks;
+  };
 }

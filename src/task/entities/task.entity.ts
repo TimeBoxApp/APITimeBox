@@ -5,7 +5,8 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
-  ManyToMany
+  ManyToMany,
+  JoinTable
 } from 'typeorm';
 
 import { User } from '../../user/entities/user.entity';
@@ -63,7 +64,8 @@ export class Task {
   @ManyToOne(() => Week, (week) => week.tasks)
   week: Week;
 
-  @ManyToMany(() => Category, (category) => category.tasks)
+  @ManyToMany(() => Category, (category) => category.tasks, { cascade: ['remove'] })
+  @JoinTable({ name: 'TaskCategory' })
   categories: Category[];
 
   @CreateDateColumn()
