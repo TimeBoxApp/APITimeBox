@@ -176,6 +176,18 @@ export class TaskService {
     return { statusCode: HttpStatus.OK, message: 'OK' };
   }
 
+  async getTotalCompletedTasks(userId: number): Promise<number> {
+    return await this.taskRepository.count({
+      where: { userId, status: TaskStatus.DONE }
+    });
+  }
+
+  async getTotalBacklogItems(userId: number): Promise<number> {
+    return await this.taskRepository.count({
+      where: { userId, status: TaskStatus.CREATED }
+    });
+  }
+
   /**
    * Group tasks by status
    * @param tasks

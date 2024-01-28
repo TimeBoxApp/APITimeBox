@@ -1,8 +1,10 @@
-import { Controller, Get, Body, Patch, Param } from '@nestjs/common';
+import { Controller, Get, Body, Patch, Req } from '@nestjs/common';
 
 import { PreferencesService } from './preferences.service';
 import { UpdatePreferenceDto } from './dto/update-preference.dto';
 import { UserService } from '../user/user.service';
+import { UserRequest } from '../user/entities/user.entity';
+import { Preferences } from './entities/preferences.entity';
 
 @Controller('preferences')
 export class PreferencesController {
@@ -18,18 +20,17 @@ export class PreferencesController {
   // }
 
   @Get()
-  findAll() {
-    return this.preferencesService.findAll();
+  async findAll(@Req() request: UserRequest): Promise<Preferences | null> {
+    const user = await this.userService.getUserForRequest(request);
+
+    return this.preferencesService.findCustomerPreferences(user.id);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.preferencesService.findOne(+id);
-  }
+  @Patch()
+  async update(@Req() request: UserRequest, @Body() updatePreferenceDto: UpdatePreferenceDto) {
+    const user = await this.userService.getUserForRequest(request);
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePreferenceDto: UpdatePreferenceDto) {
-    return this.preferencesService.update(+id, updatePreferenceDto);
+    return this.preferencesService.update(user.id, updatePreferenceDto);
   }
 
   // @Delete(':id')

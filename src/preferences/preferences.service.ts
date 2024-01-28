@@ -1,8 +1,9 @@
 import { Repository } from 'typeorm';
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Preferences } from './entities/preferences.entity';
+import { UpdatePreferenceDto } from './dto/update-preference.dto';
 
 @Injectable()
 export class PreferencesService {
@@ -19,19 +20,26 @@ export class PreferencesService {
     return await this.preferencesRepository.save(preferences);
   }
 
-  findAll() {
-    return `This action returns all preferences`;
+  async findCustomerPreferences(userId: number): Promise<Preferences | null> {
+    return await this.preferencesRepository.findOne({
+      where: { userId },
+      select: {
+        isPomodoroEnabled: true,
+        isBookListEnabled: true,
+        toDoColumnName: true,
+        inProgressColumnName: true,
+        doneColumnName: true
+      }
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} preference`;
-  }
-
-  // update(id: number, updatePreferenceDto: UpdatePreferenceDto) {
-  //   return `This action updates a #${id} preference`;
+  // findOne(id: number) {
+  //   return `This action returns a #${id} preference`;
   // }
 
-  remove(id: number) {
-    return `This action removes a #${id} preference`;
+  async update(userId: number, updatePreferenceDto: UpdatePreferenceDto): Promise<object> {
+    await this.preferencesRepository.update({ userId }, updatePreferenceDto);
+
+    return { statusCode: HttpStatus.OK };
   }
 }

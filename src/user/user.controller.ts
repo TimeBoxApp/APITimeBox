@@ -44,8 +44,6 @@ export class UserController {
   public async getUserData(@Req() request: UserRequest): Promise<User | null> {
     const user = await this.userService.getUserForRequest(request);
 
-    if (!user) throw new UnauthorizedException();
-
     return await this.userService.getUserData(user.id);
   }
 
@@ -58,6 +56,13 @@ export class UserController {
     return await this.userService.getUserCurrentWeek(user.id);
   }
 
+  @Get('stats')
+  public async getUserStats(@Req() request: UserRequest): Promise<object> {
+    const user = await this.userService.getUserForRequest(request);
+
+    return await this.userService.getUserStats(user.id);
+  }
+
   @UseGuards(UserIsOwnerGuard)
   @Get('/:userId')
   public async getUser(@Param('userId') userId: number) {
@@ -65,9 +70,11 @@ export class UserController {
   }
 
   @UseGuards(UserIsOwnerGuard)
-  @Patch('/edit/:userId')
-  public async editUser(@Body() updateUserDto: UpdateUserDto, @Param('userId') userId: number): Promise<string> {
-    return await this.userService.editUser(userId, updateUserDto);
+  @Patch('/')
+  public async editUser(@Req() request: UserRequest, @Body() updateUserDto: UpdateUserDto) {
+    const user = await this.userService.getUserForRequest(request);
+
+    return await this.userService.editUser(user.id, updateUserDto);
   }
 
   @UseGuards(UserIsOwnerGuard)

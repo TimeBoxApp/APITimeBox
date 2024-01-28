@@ -110,6 +110,7 @@ export class UserService {
         firstName: true,
         lastName: true,
         role: true,
+        dateFormat: true,
         categories: {
           id: true,
           title: true,
@@ -118,7 +119,7 @@ export class UserService {
           emoji: true
         }
       },
-      relations: { categories: true }
+      relations: { categories: true, preferences: true }
     });
 
     if (!userEntity) throw new UnauthorizedException();
@@ -158,7 +159,18 @@ export class UserService {
     return user.role;
   }
 
-  public async editUser(userId: number, updateUserDto: UpdateUserDto): Promise<string> {
+  public async getUserStats(userId: number): Promise<object> {
+    const [totalCompletedWeeks, totalCompletedTasks, totalBacklogItems] = await Promise.all([
+      this.weekService.getTotalCompletedWeeks(userId),
+      this.taskService.getTotalCompletedTasks(userId),
+      this.taskService.getTotalBacklogItems(userId)
+    ]);
+
+    return { totalCompletedWeeks, totalCompletedTasks, totalBacklogItems };
+  }
+
+  public async editUser(userId: number, updateUserDto: UpdateUserDto): Promise<object> {
+    // TODO: prevent changing fields like id, password etc
     const editedUser: User | null = await this.userRepository.findOne({
       where: { id: userId }
     });
@@ -169,7 +181,7 @@ export class UserService {
 
     this.logger.log(`Successfully updated user ${userId}`);
 
-    return 'OK';
+    return { statusCoe: HttpStatus.OK };
   }
 
   public async deleteUser(userId: number): Promise<string> {
@@ -181,11 +193,11 @@ export class UserService {
   }
 
   public async getUserForRequest(request: UserRequest): Promise<User> {
-    const { user } = request;
+    const {
+      user: { userId }
+    } = request;
 
-    if (!user) throw new UnauthorizedException();
-
-    const { userId } = user;
+    if (!userId) throw new UnauthorizedException();
 
     const userEntity = await this.userRepository.findOne({
       where: { id: userId, status: UserStatus.ACTIVE },

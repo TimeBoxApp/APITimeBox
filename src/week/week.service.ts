@@ -100,6 +100,12 @@ export class WeekService {
     return week;
   }
 
+  async getTotalCompletedWeeks(userId: number): Promise<number> {
+    return await this.weekRepository.count({
+      where: { userId, status: WeekStatus.COMPLETED }
+    });
+  }
+
   // update(id: number, updateWeekDto: UpdateWeekDto) {
   //   return `This action updates a #${id} week`;
   // }

@@ -1,4 +1,12 @@
-import { Column, CreateDateColumn, Entity, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  OneToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn
+} from 'typeorm';
 
 import { User } from '../../user/entities/user.entity';
 
@@ -26,6 +34,7 @@ export class Preferences {
   doneColumnName: string;
 
   @OneToOne(() => User, (user) => user.preferences)
+  @JoinColumn({ name: 'userId' })
   user: User;
 
   @CreateDateColumn()
