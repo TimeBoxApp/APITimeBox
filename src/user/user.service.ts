@@ -15,8 +15,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Week } from '../week/entities/week.entity';
 import { TaskService } from '../task/task.service';
-import { PreferencesService } from '../preferences/preferences.service';
 import { WeekService } from '../week/week.service';
+import { PreferencesService } from '../preferences/preferences.service';
 
 @Injectable()
 export class UserService {

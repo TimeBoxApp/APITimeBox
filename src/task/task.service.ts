@@ -1,6 +1,14 @@
 import * as _ from 'lodash';
 import { Not, Repository } from 'typeorm';
-import { ForbiddenException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  forwardRef,
+  HttpStatus,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -16,6 +24,7 @@ export class TaskService {
     @InjectRepository(Task)
     private taskRepository: Repository<Task>,
 
+    @Inject(forwardRef(() => WeekService))
     private readonly weekService: WeekService,
 
     private readonly categoryService: CategoryService
@@ -186,6 +195,20 @@ export class TaskService {
     return await this.taskRepository.count({
       where: { userId, status: TaskStatus.CREATED }
     });
+  }
+
+  async moveUnfinishedTasksToBacklog(tasks: Task[]) {
+    for (const task of tasks) {
+      if (task.status !== TaskStatus.DONE) {
+        task.status = TaskStatus.CREATED;
+        task.weekId = null;
+        task.boardRank = null;
+      }
+    }
+
+    console.log(tasks);
+
+    await this.taskRepository.save(tasks);
   }
 
   /**

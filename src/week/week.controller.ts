@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Req } from '@nestjs/common';
+import { Controller, Get, Param, Post, Req } from '@nestjs/common';
 
 import { WeekService } from './week.service';
 import { UserRequest } from '../user/entities/user.entity';
@@ -25,8 +25,13 @@ export class WeekController {
   @Get(':id')
   async findOne(@Req() request: UserRequest, @Param('id') id: string) {
     const user = await this.userService.getUserForRequest(request);
-
     return this.weekService.findOne(+id, user.id);
+  }
+
+  @Post(':id/finish')
+  async finishWeek(@Req() request: UserRequest, @Param('id') id: string) {
+    const user = await this.userService.getUserForRequest(request);
+    return this.weekService.finishWeek(+id, user.id);
   }
 
   // @Patch(':id')

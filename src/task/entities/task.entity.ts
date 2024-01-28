@@ -52,8 +52,8 @@ export class Task {
   @Column({ type: 'varchar', length: 512, nullable: true })
   backlogRank: string | null;
 
-  @Column()
-  weekId: number;
+  @Column({ nullable: true })
+  weekId: number | null;
 
   @Column()
   userId: number;
