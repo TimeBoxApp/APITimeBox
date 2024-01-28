@@ -5,11 +5,13 @@ import {
   Entity,
   CreateDateColumn,
   UpdateDateColumn,
-  OneToMany
+  OneToMany,
+  OneToOne
 } from 'typeorm';
 
 import { Task } from '../../task/entities/task.entity';
 import { Category } from '../../category/entities/category.entity';
+import { Preferences } from '../../preferences/entities/preferences.entity';
 
 export interface UserRequest extends Request {
   user: { userId: number };
@@ -54,6 +56,9 @@ export class User extends BaseEntity {
   @Column({ default: null })
   locale: string;
 
+  @Column({ default: null })
+  dateFormat: string;
+
   @Column('enum', { enum: UserStatus, default: UserStatus.ACTIVE })
   status: UserStatus;
 
@@ -68,6 +73,9 @@ export class User extends BaseEntity {
 
   @OneToMany(() => Category, (category) => category.user)
   categories: Category[];
+
+  @OneToOne(() => Preferences, (preferences) => preferences.user, { onDelete: 'CASCADE' })
+  preferences: User;
 
   @CreateDateColumn()
   createdAt: Date;

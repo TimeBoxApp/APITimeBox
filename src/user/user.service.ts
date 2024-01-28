@@ -13,8 +13,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserRequest, UserRole, UserStatus } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { Week, WeekStatus } from '../week/entities/week.entity';
+import { Week } from '../week/entities/week.entity';
 import { TaskService } from '../task/task.service';
+import { PreferencesService } from '../preferences/preferences.service';
+import { WeekService } from '../week/week.service';
 
 @Injectable()
 export class UserService {
@@ -24,10 +26,11 @@ export class UserService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
 
-    @InjectRepository(Week)
-    private weekRepository: Repository<Week>,
+    private readonly weekService: WeekService,
 
-    private readonly taskService: TaskService
+    private readonly taskService: TaskService,
+
+    private readonly preferencesService: PreferencesService
   ) {}
 
   public async createUser(createUserDto: CreateUserDto): Promise<object> {
@@ -47,6 +50,8 @@ export class UserService {
     createUserDto.password = await this.hashPassword(password);
 
     const result = await this.userRepository.save(createUserDto);
+
+    await this.preferencesService.create(result.id);
 
     this.logger.log(`Successfully created user ${result.id} with email ${email}`);
 
@@ -105,6 +110,7 @@ export class UserService {
         firstName: true,
         lastName: true,
         role: true,
+        dateFormat: true,
         categories: {
           id: true,
           title: true,
@@ -113,7 +119,7 @@ export class UserService {
           emoji: true
         }
       },
-      relations: { categories: true }
+      relations: { categories: true, preferences: true }
     });
 
     if (!userEntity) throw new UnauthorizedException();
@@ -122,34 +128,7 @@ export class UserService {
   }
 
   public async getUserCurrentWeek(userId: number): Promise<Week | object> {
-    const weekWithTasks = await this.weekRepository.findOne({
-      where: { userId, status: WeekStatus.IN_PROGRESS },
-      relations: {
-        tasks: {
-          categories: true
-        }
-      },
-      select: {
-        id: true,
-        name: true,
-        startDate: true,
-        endDate: true,
-        tasks: {
-          id: true,
-          title: true,
-          status: true,
-          priority: true,
-          dueDate: true,
-          boardRank: true,
-          categories: {
-            id: true,
-            title: true,
-            emoji: true,
-            color: true
-          }
-        }
-      }
-    });
+    const weekWithTasks = await this.weekService.findActiveWeekForUser(userId);
 
     if (!weekWithTasks)
       return {
@@ -180,7 +159,18 @@ export class UserService {
     return user.role;
   }
 
-  public async editUser(userId: number, updateUserDto: UpdateUserDto): Promise<string> {
+  public async getUserStats(userId: number): Promise<object> {
+    const [totalCompletedWeeks, totalCompletedTasks, totalBacklogItems] = await Promise.all([
+      this.weekService.getTotalCompletedWeeks(userId),
+      this.taskService.getTotalCompletedTasks(userId),
+      this.taskService.getTotalBacklogItems(userId)
+    ]);
+
+    return { totalCompletedWeeks, totalCompletedTasks, totalBacklogItems };
+  }
+
+  public async editUser(userId: number, updateUserDto: UpdateUserDto): Promise<object> {
+    // TODO: prevent changing fields like id, password etc
     const editedUser: User | null = await this.userRepository.findOne({
       where: { id: userId }
     });
@@ -191,7 +181,7 @@ export class UserService {
 
     this.logger.log(`Successfully updated user ${userId}`);
 
-    return 'OK';
+    return { statusCoe: HttpStatus.OK };
   }
 
   public async deleteUser(userId: number): Promise<string> {
@@ -203,11 +193,11 @@ export class UserService {
   }
 
   public async getUserForRequest(request: UserRequest): Promise<User> {
-    const { user } = request;
+    const {
+      user: { userId }
+    } = request;
 
-    if (!user) throw new UnauthorizedException();
-
-    const { userId } = user;
+    if (!userId) throw new UnauthorizedException();
 
     const userEntity = await this.userRepository.findOne({
       where: { id: userId, status: UserStatus.ACTIVE },

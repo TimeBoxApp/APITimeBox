@@ -34,9 +34,11 @@ export class CategoryService {
   //   return `This action returns all category`;
   // }
   //
-  // findOne(id: number) {
-  //   return `This action returns a #${id} category`;
-  // }
+  async findOne(id: number) {
+    return await this.categoryRepository.findOne({
+      where: { id }
+    });
+  }
   //
   // update(id: number, updateCategoryDto: UpdateCategoryDto) {
   //   return `This action updates a #${id} category`;

@@ -7,8 +7,8 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { Task, TaskStatus } from './entities/task.entity';
 import { User } from '../user/entities/user.entity';
-import { Week } from '../week/entities/week.entity';
-import { Category } from '../category/entities/category.entity';
+import { WeekService } from '../week/week.service';
+import { CategoryService } from '../category/category.service';
 
 @Injectable()
 export class TaskService {
@@ -16,11 +16,9 @@ export class TaskService {
     @InjectRepository(Task)
     private taskRepository: Repository<Task>,
 
-    @InjectRepository(Category)
-    private categoryRepository: Repository<Category>,
+    private readonly weekService: WeekService,
 
-    @InjectRepository(Week)
-    private weekRepository: Repository<Week>
+    private readonly categoryService: CategoryService
   ) {}
 
   private readonly logger: Logger = new Logger(TaskService.name);
@@ -45,7 +43,7 @@ export class TaskService {
     const categories = [];
 
     if (weekId) {
-      const week = await this.weekRepository.findOneBy({ id: weekId });
+      const week = await this.weekService.findWeekWithoutTasks(weekId);
 
       if (!week) {
         throw new NotFoundException('Week not found');
@@ -59,7 +57,7 @@ export class TaskService {
     }
 
     if (categoryId) {
-      const category = await this.categoryRepository.findOneBy({ id: categoryId });
+      const category = await this.categoryService.findOne(categoryId);
 
       if (!category) throw new NotFoundException('Category not found');
 
@@ -176,6 +174,18 @@ export class TaskService {
     this.logger.log(`Successfully removed task ${taskId}`);
 
     return { statusCode: HttpStatus.OK, message: 'OK' };
+  }
+
+  async getTotalCompletedTasks(userId: number): Promise<number> {
+    return await this.taskRepository.count({
+      where: { userId, status: TaskStatus.DONE }
+    });
+  }
+
+  async getTotalBacklogItems(userId: number): Promise<number> {
+    return await this.taskRepository.count({
+      where: { userId, status: TaskStatus.CREATED }
+    });
   }
 
   /**
