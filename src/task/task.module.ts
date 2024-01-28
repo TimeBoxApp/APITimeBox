@@ -9,7 +9,12 @@ import { CategoryModule } from '../category/category.module';
 import { UserModule } from '../user/user.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Task]), forwardRef(() => UserModule), WeekModule, CategoryModule],
+  imports: [
+    TypeOrmModule.forFeature([Task]),
+    forwardRef(() => UserModule),
+    forwardRef(() => WeekModule),
+    CategoryModule
+  ],
   controllers: [TaskController],
   providers: [TaskService],
   exports: [TaskService]
