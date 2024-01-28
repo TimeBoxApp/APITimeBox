@@ -13,8 +13,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserRequest, UserRole, UserStatus } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { Week, WeekStatus } from '../week/entities/week.entity';
+import { Week } from '../week/entities/week.entity';
 import { TaskService } from '../task/task.service';
+import { PreferencesService } from '../preferences/preferences.service';
+import { WeekService } from '../week/week.service';
 
 @Injectable()
 export class UserService {
@@ -24,10 +26,11 @@ export class UserService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
 
-    @InjectRepository(Week)
-    private weekRepository: Repository<Week>,
+    private readonly weekService: WeekService,
 
-    private readonly taskService: TaskService
+    private readonly taskService: TaskService,
+
+    private readonly preferencesService: PreferencesService
   ) {}
 
   public async createUser(createUserDto: CreateUserDto): Promise<object> {
@@ -47,6 +50,8 @@ export class UserService {
     createUserDto.password = await this.hashPassword(password);
 
     const result = await this.userRepository.save(createUserDto);
+
+    await this.preferencesService.create(result.id);
 
     this.logger.log(`Successfully created user ${result.id} with email ${email}`);
 
@@ -122,34 +127,7 @@ export class UserService {
   }
 
   public async getUserCurrentWeek(userId: number): Promise<Week | object> {
-    const weekWithTasks = await this.weekRepository.findOne({
-      where: { userId, status: WeekStatus.IN_PROGRESS },
-      relations: {
-        tasks: {
-          categories: true
-        }
-      },
-      select: {
-        id: true,
-        name: true,
-        startDate: true,
-        endDate: true,
-        tasks: {
-          id: true,
-          title: true,
-          status: true,
-          priority: true,
-          dueDate: true,
-          boardRank: true,
-          categories: {
-            id: true,
-            title: true,
-            emoji: true,
-            color: true
-          }
-        }
-      }
-    });
+    const weekWithTasks = await this.weekService.findActiveWeekForUser(userId);
 
     if (!weekWithTasks)
       return {

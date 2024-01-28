@@ -16,4 +16,8 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   locale?: string;
+
+  @IsOptional()
+  @IsString()
+  datFormat?: string;
 }

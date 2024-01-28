@@ -1,17 +1,15 @@
-import { Module } from '@nestjs/common';
-import { CategoryService } from './category.service';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { CategoryService } from './category.service';
 import { CategoryController } from './category.controller';
-import { UserService } from '../user/user.service';
 import { Category } from './entities/category.entity';
-import { User } from '../user/entities/user.entity';
-import { Week } from '../week/entities/week.entity';
-import { TaskModule } from '../task/task.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
-  imports: [TaskModule, TypeOrmModule.forFeature([Category, User, Week])],
+  imports: [TypeOrmModule.forFeature([Category]), forwardRef(() => UserModule)],
   controllers: [CategoryController],
-  providers: [CategoryService, UserService]
+  providers: [CategoryService],
+  exports: [CategoryService]
 })
 export class CategoryModule {}

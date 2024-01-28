@@ -18,6 +18,7 @@ import { dataSourceOptions } from '../db/data-source';
 import { TaskModule } from './task/task.module';
 import { WeekModule } from './week/week.module';
 import { CategoryModule } from './category/category.module';
+import { PreferencesModule } from './preferences/preferences.module';
 
 @Module({
   imports: [
@@ -49,7 +50,8 @@ import { CategoryModule } from './category/category.module';
     ]),
     TaskModule,
     WeekModule,
-    CategoryModule
+    CategoryModule,
+    PreferencesModule
   ],
   controllers: [AppController],
   providers: [
