@@ -7,11 +7,13 @@ import { createClient } from 'redis';
 import { ValidationPipe } from '@nestjs/common';
 
 import { AppModule } from './app.module';
+import * as process from 'process';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  const redisClient = createClient();
+  // @ts-expect-error todo
+  const redisClient = createClient({ socket: { host: process.env.REDIS_HOST, port: process.env.REDIS_PORT } });
   redisClient.connect().catch(console.error);
   const redisStore = new RedisStore({
     client: redisClient,
@@ -20,7 +22,7 @@ async function bootstrap() {
 
   app.use(helmet());
   app.enableCors({
-    origin: ['http://localhost:8080'],
+    origin: ['http://localhost:8080', 'http://localhost:8001'],
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     credentials: true
   });
@@ -39,6 +41,6 @@ async function bootstrap() {
   app.use(passport.initialize());
   app.use(passport.session());
   app.useGlobalPipes(new ValidationPipe());
-  await app.listen(3000);
+  await app.listen(process.env.PORT || 3000);
 }
 bootstrap();
