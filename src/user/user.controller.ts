@@ -56,6 +56,15 @@ export class UserController {
     return await this.userService.getUserCurrentWeek(user.id);
   }
 
+  @Get('backlog')
+  public async getUserBacklog(@Req() request: UserRequest): Promise<object> {
+    const user = await this.userService.getUserForRequest(request);
+
+    if (!user) throw new UnauthorizedException();
+
+    return await this.userService.getUserBacklog(user.id);
+  }
+
   @Get('stats')
   public async getUserStats(@Req() request: UserRequest): Promise<object> {
     const user = await this.userService.getUserForRequest(request);

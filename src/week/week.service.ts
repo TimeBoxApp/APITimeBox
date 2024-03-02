@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import {
   ForbiddenException,
   forwardRef,
@@ -12,6 +12,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Week, WeekStatus } from './entities/week.entity';
 import { TaskService } from '../task/task.service';
+import { TaskStatus } from '../task/entities/task.entity';
+import { CreateWeekDto } from './dto/create-week.dto';
+import { UpdateWeekDto } from './dto/update-week.dto';
 
 @Injectable()
 export class WeekService {
@@ -25,9 +28,19 @@ export class WeekService {
 
   private readonly logger: Logger = new Logger(WeekService.name);
 
-  // create(createWeekDto: CreateWeekDto) {
-  //   return 'This action adds a new week';
-  // }
+  async create(createWeekDto: CreateWeekDto, userId: number) {
+    const newWeek = this.weekRepository.create({
+      status: WeekStatus.PLANNED,
+      name: createWeekDto.name,
+      startDate: createWeekDto.startDate,
+      endDate: createWeekDto.endDate,
+      user: { id: userId }
+    });
+
+    await this.weekRepository.save(newWeek);
+
+    return { statusCode: HttpStatus.CREATED };
+  }
 
   // findAll() {
   //   return `This action returns all week`;
@@ -102,6 +115,41 @@ export class WeekService {
     });
   }
 
+  async findBacklogForUser(userId: number) {
+    const weeks = await this.weekRepository.find({
+      where: { userId, status: In([WeekStatus.IN_PROGRESS, WeekStatus.PLANNED]) },
+      relations: {
+        tasks: {
+          categories: true
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        startDate: true,
+        endDate: true,
+        status: true,
+        tasks: {
+          id: true,
+          title: true,
+          status: true,
+          priority: true,
+          backlogRank: true,
+          categories: {
+            id: true,
+            title: true,
+            emoji: true,
+            color: true
+          }
+        }
+      },
+      order: { tasks: { backlogRank: 'asc' } }
+    });
+    const backlogTasks = await this.taskService.findTasksWithoutWeekId(userId);
+
+    return { weeks, backlogTasks };
+  }
+
   async findWeekWithoutTasks(id: number) {
     const week = await this.weekRepository.findOne({
       where: { id }
@@ -140,16 +188,54 @@ export class WeekService {
 
     week.status = WeekStatus.COMPLETED;
 
-    await Promise.all([this.taskService.moveUnfinishedTasksToBacklog(week.tasks), this.weekRepository.save(week)]);
+    await Promise.all([
+      this.taskService.moveTasksToBacklog(week.tasks, [TaskStatus.IN_PROGRESS, TaskStatus.TO_DO]),
+      this.weekRepository.save(week)
+    ]);
 
     return { statusCode: HttpStatus.OK };
   }
 
-  // update(id: number, updateWeekDto: UpdateWeekDto) {
-  //   return `This action updates a #${id} week`;
-  // }
-  //
-  // remove(id: number) {
-  //   return `This action removes a #${id} week`;
-  // }
+  async update(id: number, userId: number, updateWeekDto: UpdateWeekDto) {
+    const week = await this.weekRepository.findOne({
+      where: { id, userId }
+    });
+
+    if (!week) throw new NotFoundException('Week not found');
+
+    await this.weekRepository.update(id, updateWeekDto);
+
+    return { statusCode: HttpStatus.OK };
+  }
+
+  async remove(id: number, userId: number) {
+    const week = await this.weekRepository.findOne({
+      where: { id, userId },
+      select: {
+        id: true,
+        status: true,
+        tasks: {
+          id: true,
+          status: true,
+          boardRank: true,
+          weekId: true
+        }
+      },
+      relations: { tasks: true }
+    });
+
+    if (!week) throw new NotFoundException('Week not found');
+
+    if (week.status === WeekStatus.IN_PROGRESS) throw new ForbiddenException('Week is in progress');
+
+    await this.taskService.moveTasksToBacklog(week.tasks, [
+      TaskStatus.CREATED,
+      TaskStatus.IN_PROGRESS,
+      TaskStatus.TO_DO,
+      TaskStatus.DONE
+    ]);
+    await this.weekRepository.remove(week);
+
+    return { statusCode: HttpStatus.OK };
+  }
 }

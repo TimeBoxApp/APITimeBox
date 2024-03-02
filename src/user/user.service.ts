@@ -143,6 +143,10 @@ export class UserService {
     return weekWithTasks;
   }
 
+  public async getUserBacklog(userId: number): Promise<object> {
+    return await this.weekService.findBacklogForUser(userId);
+  }
+
   public async getUserRole(id: number | null): Promise<UserRole | null> {
     if (!id) return null;
 

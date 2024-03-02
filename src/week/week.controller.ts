@@ -1,8 +1,10 @@
-import { Controller, Get, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
 
 import { WeekService } from './week.service';
 import { UserRequest } from '../user/entities/user.entity';
 import { UserService } from '../user/user.service';
+import { CreateWeekDto } from './dto/create-week.dto';
+import { UpdateWeekDto } from './dto/update-week.dto';
 
 @Controller('week')
 export class WeekController {
@@ -12,10 +14,10 @@ export class WeekController {
     private readonly userService: UserService
   ) {}
 
-  // @Post()
-  // create(@Body() createWeekDto: CreateWeekDto) {
-  //   return this.weekService.create(createWeekDto);
-  // }
+  @Post()
+  create(@Req() request: UserRequest, @Body() createWeekDto: CreateWeekDto) {
+    return this.weekService.create(createWeekDto, request.user.userId);
+  }
 
   // @Get()
   // findAll() {
@@ -34,13 +36,13 @@ export class WeekController {
     return this.weekService.finishWeek(+id, user.id);
   }
 
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateWeekDto: UpdateWeekDto) {
-  //   return this.weekService.update(+id, updateWeekDto);
-  // }
+  @Patch(':id')
+  update(@Req() request: UserRequest, @Param('id') id: string, @Body() updateWeekDto: UpdateWeekDto) {
+    return this.weekService.update(+id, request.user.userId, updateWeekDto);
+  }
 
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.weekService.remove(+id);
-  // }
+  @Delete(':id')
+  remove(@Req() request: UserRequest, @Param('id') id: string) {
+    return this.weekService.remove(+id, request.user.userId);
+  }
 }

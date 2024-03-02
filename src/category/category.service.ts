@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { ForbiddenException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -37,6 +37,12 @@ export class CategoryService {
   async findOne(id: number) {
     return await this.categoryRepository.findOne({
       where: { id }
+    });
+  }
+
+  async findCategories(categories: [number], userId: number) {
+    return await this.categoryRepository.find({
+      where: { id: In(categories), userId }
     });
   }
   //

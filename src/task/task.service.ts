@@ -1,5 +1,5 @@
 import * as _ from 'lodash';
-import { Not, Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import {
   ForbiddenException,
   forwardRef,
@@ -39,8 +39,8 @@ export class TaskService {
       status = TaskStatus.CREATED,
       dueDate = null,
       weekId,
-      categoryId,
       priority = null,
+      taskCategories,
       userId,
       boardRank = null,
       backlogRank = null
@@ -49,7 +49,6 @@ export class TaskService {
     if (user.id !== userId) return new ForbiddenException('User cannot create task for another user');
 
     const task = new Task();
-    const categories = [];
 
     if (weekId) {
       const week = await this.weekService.findWeekWithoutTasks(weekId);
@@ -65,14 +64,13 @@ export class TaskService {
       task.weekId = weekId;
     }
 
-    if (categoryId) {
-      const category = await this.categoryService.findOne(categoryId);
+    if (taskCategories?.length) {
+      const categoriesFound = await this.categoryService.findCategories(taskCategories, userId);
 
-      if (!category) throw new NotFoundException('Category not found');
+      if (!categoriesFound.length) throw new NotFoundException('Categories not found');
 
-      if (category.userId != user.id) throw new ForbiddenException('User cannot use this category');
-
-      categories.push(category);
+      task.categories = [];
+      categoriesFound.forEach((cat) => task.categories.push(cat));
     }
 
     task.title = title;
@@ -82,7 +80,6 @@ export class TaskService {
     task.userId = userId;
     task.backlogRank = backlogRank;
     task.boardRank = boardRank;
-    task.categories = categories;
 
     if (dueDate) task.dueDate = new Date(dueDate);
 
@@ -148,14 +145,50 @@ export class TaskService {
     return { tasks: this.groupTasksByStatus(tasks) };
   }
 
+  async findTasksWithoutWeekId(userId: number) {
+    return await this.taskRepository.find({
+      where: { weekId: IsNull(), userId },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        priority: true,
+        backlogRank: true,
+        categories: {
+          id: true,
+          title: true,
+          emoji: true,
+          color: true
+        }
+      },
+      relations: { categories: true },
+      order: { backlogRank: 'ASC' }
+    });
+  }
+
   async update(id: number, userId: number, updateTaskDto: UpdateTaskDto) {
     const editedTask: Task | null = await this.taskRepository.findOne({
-      where: { id }
+      where: { id },
+      relations: { categories: true }
     });
 
     if (!editedTask) throw new NotFoundException('Task not found');
 
     if (userId !== editedTask.userId) throw new ForbiddenException('User cannot update this task');
+
+    const { taskCategories } = updateTaskDto;
+
+    if (taskCategories?.length) {
+      const foundCategories = await this.categoryService.findCategories(taskCategories, userId);
+
+      if (!foundCategories.length) throw new NotFoundException('Categories not found');
+
+      foundCategories.forEach((cat) => editedTask.categories.push(cat));
+
+      await this.taskRepository.save(editedTask);
+    }
+
+    delete updateTaskDto.taskCategories;
 
     await this.taskRepository.update({ id }, updateTaskDto);
 
@@ -197,16 +230,16 @@ export class TaskService {
     });
   }
 
-  async moveUnfinishedTasksToBacklog(tasks: Task[]) {
+  async moveTasksToBacklog(tasks: Task[], statuses: TaskStatus[], resetStatus: boolean = false) {
     for (const task of tasks) {
-      if (task.status !== TaskStatus.DONE) {
-        task.status = TaskStatus.CREATED;
+      if (statuses.includes(task.status)) {
+        if (resetStatus) task.status = TaskStatus.CREATED;
+
         task.weekId = null;
         task.boardRank = null;
+        task.backlogRank = null;
       }
     }
-
-    console.log(tasks);
 
     await this.taskRepository.save(tasks);
   }
