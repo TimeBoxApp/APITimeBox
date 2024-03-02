@@ -39,8 +39,8 @@ export class TaskService {
       status = TaskStatus.CREATED,
       dueDate = null,
       weekId,
-      categoryId,
       priority = null,
+      taskCategories,
       userId,
       boardRank = null,
       backlogRank = null
@@ -49,7 +49,6 @@ export class TaskService {
     if (user.id !== userId) return new ForbiddenException('User cannot create task for another user');
 
     const task = new Task();
-    const categories = [];
 
     if (weekId) {
       const week = await this.weekService.findWeekWithoutTasks(weekId);
@@ -65,14 +64,13 @@ export class TaskService {
       task.weekId = weekId;
     }
 
-    if (categoryId) {
-      const category = await this.categoryService.findOne(categoryId);
+    if (taskCategories?.length) {
+      const categoriesFound = await this.categoryService.findCategories(taskCategories, userId);
 
-      if (!category) throw new NotFoundException('Category not found');
+      if (!categoriesFound.length) throw new NotFoundException('Categories not found');
 
-      if (category.userId != user.id) throw new ForbiddenException('User cannot use this category');
-
-      categories.push(category);
+      task.categories = [];
+      categoriesFound.forEach((cat) => task.categories.push(cat));
     }
 
     task.title = title;
@@ -82,7 +80,6 @@ export class TaskService {
     task.userId = userId;
     task.backlogRank = backlogRank;
     task.boardRank = boardRank;
-    task.categories = categories;
 
     if (dueDate) task.dueDate = new Date(dueDate);
 
@@ -179,21 +176,19 @@ export class TaskService {
 
     if (userId !== editedTask.userId) throw new ForbiddenException('User cannot update this task');
 
-    const { categoryId } = updateTaskDto;
+    const { taskCategories } = updateTaskDto;
 
-    if (categoryId) {
-      const category = await this.categoryService.findOne(categoryId);
+    if (taskCategories?.length) {
+      const foundCategories = await this.categoryService.findCategories(taskCategories, userId);
 
-      if (!category) throw new NotFoundException('Category not found');
+      if (!foundCategories.length) throw new NotFoundException('Categories not found');
 
-      if (category.userId != userId) throw new ForbiddenException('User cannot use this category');
-
-      editedTask.categories.push(category);
+      foundCategories.forEach((cat) => editedTask.categories.push(cat));
 
       await this.taskRepository.save(editedTask);
-
-      delete updateTaskDto.categoryId;
     }
+
+    delete updateTaskDto.taskCategories;
 
     await this.taskRepository.update({ id }, updateTaskDto);
 

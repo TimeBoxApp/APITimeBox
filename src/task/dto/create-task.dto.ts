@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsOptional, IsString, Length, MaxLength } from 'class-validator';
+import { IsArray, IsEnum, IsInt, IsOptional, IsString, Length, MaxLength } from 'class-validator';
 
 import { TaskStatus, TaskPriority } from '../entities/task.entity';
 
@@ -34,11 +34,12 @@ export class CreateTaskDto {
   @MaxLength(512)
   backlogRank?: string | null;
 
-  @IsInt()
+  @IsArray()
   @IsOptional()
-  categoryId: number | null;
+  taskCategories?: [number] | null;
 
   @IsInt()
+  @IsOptional()
   weekId: number;
 
   @IsInt()
