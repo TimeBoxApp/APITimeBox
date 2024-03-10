@@ -1,5 +1,6 @@
 import * as _ from 'lodash';
 import { IsNull, Not, Repository } from 'typeorm';
+import { LexoRank } from 'lexorank';
 import {
   ForbiddenException,
   forwardRef,
@@ -78,8 +79,16 @@ export class TaskService {
     task.status = status;
     task.priority = priority;
     task.userId = userId;
-    task.backlogRank = backlogRank;
     task.boardRank = boardRank;
+    task.backlogRank = backlogRank;
+
+    if (!backlogRank) {
+      task.backlogRank = await this.findBacklogRank(userId, weekId);
+    }
+
+    if (!boardRank) {
+      task.boardRank = await this.findBoardRank(userId, weekId, status);
+    }
 
     if (dueDate) task.dueDate = new Date(dueDate);
 
@@ -228,6 +237,34 @@ export class TaskService {
     return await this.taskRepository.count({
       where: { userId, status: TaskStatus.CREATED }
     });
+  }
+
+  async findBacklogRank(userId: number, weekId: number): Promise<string> {
+    const task = await this.taskRepository.findOne({
+      select: { id: true, backlogRank: true },
+      where: { userId, weekId },
+      order: {
+        backlogRank: 'ASC'
+      }
+    });
+
+    if (!task?.backlogRank) return LexoRank.min().toString();
+
+    return LexoRank.parse(task.backlogRank).genNext().toString();
+  }
+
+  async findBoardRank(userId: number, weekId: number, status: TaskStatus): Promise<string> {
+    const task = await this.taskRepository.findOne({
+      select: { id: true, backlogRank: true },
+      where: { userId, weekId, status },
+      order: {
+        backlogRank: 'ASC'
+      }
+    });
+
+    if (!task?.backlogRank) return LexoRank.min().toString();
+
+    return LexoRank.parse(task.backlogRank).genNext().toString();
   }
 
   async moveTasksToBacklog(tasks: Task[], statuses: TaskStatus[], resetStatus: boolean = false) {

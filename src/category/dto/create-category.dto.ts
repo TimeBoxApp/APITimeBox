@@ -1,9 +1,6 @@
 import { IsString, IsOptional, IsInt, Length } from 'class-validator';
 
 export class CreateCategoryDto {
-  @IsInt()
-  userId: number;
-
   @IsString()
   @Length(1, 255)
   title: string;
@@ -22,4 +19,8 @@ export class CreateCategoryDto {
   @IsOptional()
   @Length(1, 255)
   color?: string;
+
+  @IsInt()
+  @IsOptional()
+  userId: number;
 }

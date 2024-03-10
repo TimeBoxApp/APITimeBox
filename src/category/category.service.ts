@@ -16,8 +16,7 @@ export class CategoryService {
   private readonly logger: Logger = new Logger(CategoryService.name);
 
   async create(createCategoryDto: CreateCategoryDto, user: User) {
-    if (createCategoryDto.userId !== user.id)
-      throw new ForbiddenException('You can not create a category for another user');
+    createCategoryDto.userId = user.id;
 
     const category = this.categoryRepository.create(createCategoryDto);
 
