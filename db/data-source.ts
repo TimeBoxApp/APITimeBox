@@ -15,7 +15,6 @@ export const dataSourceOptions: DataSourceOptions = {
   migrationsRun: true,
   synchronize: false
 };
-console.log(dataSourceOptions);
 const dataSource = new DataSource(dataSourceOptions);
 
 export default dataSource;
