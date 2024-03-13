@@ -30,6 +30,11 @@ jobs:
           push: true
           target: prod
           dockerfile: ./Dockerfile
+          secrets:
+            - DATABASE_NAME=${{ secrets.DATABASE_NAME }}
+            - DATABASE_HOST=${{ secrets.DATABASE_HOST }}
+            - DATABASE_USER=${{ secrets.DATABASE_USER }}
+            - DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
           tags: kkulykk/timebox-api:latest
   deploy:
     needs: build
@@ -61,4 +66,4 @@ jobs:
 
       - name: Run new container
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ env.SERVER_ADDRESS }} 'sudo docker run -d --name timebox-api -p 3000:3000 kkulykk/timebox-api:latest'
+          ssh -o StrictHostKeyChecking=no -i key.pem ${{ env.SERVER_ADDRESS }} 'sudo docker run --name timebox-api -p 80:3000 kkulykk/timebox-api:latest'

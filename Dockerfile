@@ -14,6 +14,15 @@ ENV NODE_ENV development
 RUN addgroup --system --gid 1001 node || true
 RUN adduser --system --uid 1001 node || true
 
+ARG DATABASE_NAME
+ARG DATABASE_HOST
+ARG DATABASE_USER
+ARG DATABASE_PASSWORD
+ENV DATABASE_NAME $DATABASE_NAME
+ENV DATABASE_HOST $DATABASE_HOST
+ENV DATABASE_USER $DATABASE_USER
+ENV DATABASE_PASSWORD $DATABASE_PASSWORD
+
 # Copy source code into app folder
 COPY --chown=node:node . .
 
@@ -75,4 +84,4 @@ COPY --chown=node:node --from=build /app/node_modules node_modules
 # Set Docker as non-root user
 USER node
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]
