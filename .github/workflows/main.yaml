@@ -30,11 +30,7 @@ jobs:
           push: true
           target: prod
           dockerfile: ./Dockerfile
-          secrets:
-            - DATABASE_NAME=${{ secrets.DATABASE_NAME }}
-            - DATABASE_HOST=${{ secrets.DATABASE_HOST }}
-            - DATABASE_USER=${{ secrets.DATABASE_USER }}
-            - DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
+          secrets: DATABASE_NAME=${{ secrets.DATABASE_NAME }}, DATABASE_HOST=${{ secrets.DATABASE_HOST }}, DATABASE_USER=${{ secrets.DATABASE_USER }}, DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
           tags: kkulykk/timebox-api:latest
   deploy:
     needs: build
