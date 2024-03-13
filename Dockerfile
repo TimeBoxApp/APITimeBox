@@ -35,8 +35,8 @@ RUN apk add --no-cache libc6-compat
 ENV NODE_ENV production
 
 # Re-create non-root user for Docker
-RUN addgroup --system --gid 1001 node
-RUN adduser --system --uid 1001 node
+RUN addgroup --system --gid 1001 node  || true
+RUN adduser --system --uid 1001 node  || true
 
 # In order to run `yarn build` we need access to the Nest CLI.
 # Nest CLI is a dev dependency.
@@ -65,8 +65,8 @@ RUN apk add --no-cache libc6-compat
 ENV NODE_ENV production
 
 # Re-create non-root user for Docker
-RUN addgroup --system --gid 1001 node
-RUN adduser --system --uid 1001 node
+RUN addgroup --system --gid 1001 node  || true
+RUN adduser --system --uid 1001 node  || true
 
 # Copy only the necessary files
 COPY --chown=node:node --from=build /app/dist dist
