@@ -33,6 +33,14 @@ RUN apk add --no-cache libc6-compat
 
 # Set to production environment
 ENV NODE_ENV production
+ARG DATABASE_NAME
+ARG DATABASE_HOST
+ARG DATABASE_USER
+ARG DATABASE_PASSWORD
+ENV DATABASE_NAME $DATABASE_NAME
+ENV DATABASE_HOST $DATABASE_HOST
+ENV DATABASE_USER $DATABASE_USER
+ENV DATABASE_PASSWORD $DATABASE_PASSWORD
 
 # Re-create non-root user for Docker
 RUN addgroup --system --gid 1001 node  || true
@@ -43,15 +51,6 @@ RUN adduser --system --uid 1001 node  || true
 COPY --chown=node:node --from=dev /app/node_modules ./node_modules
 # Copy source code
 COPY --chown=node:node . .
-
-ARG DATABASE_NAME
-ARG DATABASE_HOST
-ARG DATABASE_USER
-ARG DATABASE_PASSWORD
-ENV DATABASE_NAME=$DATABASE_NAME
-ENV DATABASE_HOST=$DATABASE_HOST
-ENV DATABASE_USER=$DATABASE_USER
-ENV DATABASE_PASSWORD=$DATABASE_PASSWORD
 
 # Generate the production build. The build script runs "nest build" to compile the application.
 RUN yarn build
@@ -72,6 +71,14 @@ RUN apk add --no-cache libc6-compat
 
 # Set to production environment
 ENV NODE_ENV production
+ARG DATABASE_NAME
+ARG DATABASE_HOST
+ARG DATABASE_USER
+ARG DATABASE_PASSWORD
+ENV DATABASE_NAME $DATABASE_NAME
+ENV DATABASE_HOST $DATABASE_HOST
+ENV DATABASE_USER $DATABASE_USER
+ENV DATABASE_PASSWORD $DATABASE_PASSWORD
 
 # Re-create non-root user for Docker
 RUN addgroup --system --gid 1001 node  || true
@@ -83,5 +90,7 @@ COPY --chown=node:node --from=build /app/node_modules node_modules
 
 # Set Docker as non-root user
 USER node
+
+EXPOSE 3000
 
 CMD ["node", "dist/src/main.js"]

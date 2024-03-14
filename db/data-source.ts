@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { DataSource, DataSourceOptions } from 'typeorm';
+import * as process from 'process';
 
 export const dataSourceOptions: DataSourceOptions = {
   type: 'mysql',
@@ -15,6 +16,8 @@ export const dataSourceOptions: DataSourceOptions = {
   migrationsRun: true,
   synchronize: false
 };
+console.log(dataSourceOptions);
+console.log(process.env.NODE_ENV);
 const dataSource = new DataSource(dataSourceOptions);
 
 export default dataSource;
