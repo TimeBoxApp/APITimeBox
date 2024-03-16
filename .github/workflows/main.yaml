@@ -68,4 +68,4 @@ jobs:
 
       - name: Run new container
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ env.SERVER_ADDRESS }} 'sudo docker run --name timebox-api -p 80:3000 kkulykk/timebox-api:latest'
+          ssh -o StrictHostKeyChecking=no -i key.pem ${{ env.SERVER_ADDRESS }} 'sudo docker run -d --name timebox-api -p 80:3000 kkulykk/timebox-api:latest'
