@@ -23,7 +23,7 @@ async function bootstrap() {
 
   app.use(helmet());
   app.enableCors({
-    origin: '*',
+    origin: ['https://timebox.guru/'],
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     credentials: true
   });
