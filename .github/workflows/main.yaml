@@ -57,6 +57,10 @@ jobs:
           echo "${{ env.AWS_PRIVATE_KEY }}" > key.pem
           chmod 600 key.pem
 
+      - name: Remove all Docker images
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ${{ env.SERVER_ADDRESS }} 'sudo docker rmi $(sudo docker images -q) -f || true'
+
       - name: Pull Docker image
         run: |
           ssh -o StrictHostKeyChecking=no -i key.pem ${{ env.SERVER_ADDRESS }} 'sudo docker pull kkulykk/timebox-api:latest'
