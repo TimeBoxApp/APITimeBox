@@ -13,7 +13,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const redisClient = createClient({
-    socket: { host: 'clustercfg.timebox-sessions.anwsxo.memorydb.eu-central-1.amazonaws.com', port: 6379 }
+    socket: { host: process.env.REDIS_HOST, port: 6379 }
   });
   redisClient.connect().catch(console.error);
   const redisStore = new RedisStore({
@@ -23,7 +23,7 @@ async function bootstrap() {
 
   app.use(helmet());
   app.enableCors({
-    origin: ['http://localhost:8080', 'http://localhost:8001'],
+    origin: '*',
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     credentials: true
   });

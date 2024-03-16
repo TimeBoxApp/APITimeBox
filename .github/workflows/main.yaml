@@ -35,6 +35,8 @@ jobs:
             DATABASE_HOST=${{ secrets.DATABASE_HOST }}
             DATABASE_USER=${{ secrets.DATABASE_USER }}
             DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
+            REDIS_HOST=${{ secrets.REDIS_HOST }}
+            SESSION_SECRET=${{ secrets.SESSION_SECRET }}
           tags: kkulykk/timebox-api:latest
   deploy:
     needs: build
