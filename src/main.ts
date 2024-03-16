@@ -12,8 +12,9 @@ import * as process from 'process';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // @ts-expect-error todo
-  const redisClient = createClient({ socket: { host: process.env.REDIS_HOST, port: process.env.REDIS_PORT } });
+  console.log(process.env.REDIS_HOST);
+
+  const redisClient = createClient({ socket: { host: process.env.REDIS_HOST, port: 6379 } });
   redisClient.connect().catch(console.error);
   const redisStore = new RedisStore({
     client: redisClient,
