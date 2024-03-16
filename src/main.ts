@@ -33,8 +33,7 @@ async function bootstrap() {
       store: redisStore,
       // @ts-expect-error remake
       secret: process.env.SESSION_SECRET,
-      // @ts-expect-error remake
-      resave: process.env.SESSION_RESAVE,
+      resave: true,
       saveUninitialized: false
     })
   );
