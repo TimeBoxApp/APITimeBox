@@ -4,6 +4,7 @@ import {
   BadRequestException,
   HttpStatus,
   Injectable,
+  Logger,
   NotFoundException,
   Req,
   UnauthorizedException
@@ -16,12 +17,16 @@ import { UserStatus, UserRequest } from '../user/entities/user.entity';
 export class AuthService {
   constructor(private readonly userService: UserService) {}
 
+  private readonly logger: Logger = new Logger(AuthService.name);
+
   async validateUser(email: string, password: string): Promise<any> {
     const user = await this.userService.getUserByEmail(email);
 
     if (!user) {
       throw new NotFoundException(`User with email ${email} not found`);
     }
+
+    this.logger.log(`Found user with ID: ${user?.id} for email ${email}`);
 
     if (user.status !== UserStatus.ACTIVE) throw new BadRequestException(`User ${email} is deactivated`);
 
@@ -42,6 +47,8 @@ export class AuthService {
     if (!user) throw new UnauthorizedException();
 
     const userData = await this.userService.getUserData(user.userId);
+
+    this.logger.log(`User ${userData?.id} successfully logged in`);
 
     return {
       statusCode: HttpStatus.OK,
