@@ -7,13 +7,12 @@ import { createClient } from 'redis';
 import { ValidationPipe } from '@nestjs/common';
 
 import { AppModule } from './app.module';
-import * as process from 'process';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
+  const isProd = process.env.NODE_ENV === 'production';
   const redisClient = createClient({
-    url: `rediss://${process.env.REDIS_HOST}:6379`
+    url: isProd ? `rediss://${process.env.REDIS_HOST}:6379` : `redis://${process.env.REDIS_HOST}:6379`
   });
   redisClient.connect().catch(console.error);
   const redisStore = new RedisStore({
@@ -32,8 +31,7 @@ async function bootstrap() {
   app.use(
     session({
       store: redisStore,
-      // @ts-expect-error remake
-      secret: process.env.SESSION_SECRET,
+      secret: process.env.SESSION_SECRET || '',
       resave: false,
       saveUninitialized: false
     })
