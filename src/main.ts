@@ -13,7 +13,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const redisClient = createClient({
-    url: `redis://${process.env.REDIS_HOST}:6379`
+    url: `rediss://${process.env.REDIS_HOST}:6379`
   });
   redisClient.connect().catch(console.error);
   const redisStore = new RedisStore({
