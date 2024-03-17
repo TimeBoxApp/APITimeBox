@@ -14,7 +14,11 @@ export class LocalAuthGuard extends AuthGuard('local') {
 
     console.log(request);
 
-    await super.logIn(request);
+    try {
+      await super.logIn(request);
+    } catch (error) {
+      console.error('Error during login', error);
+    }
 
     console.log(result);
 
