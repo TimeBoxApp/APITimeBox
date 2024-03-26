@@ -10,10 +10,9 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  // const isProd = process.env.NODE_ENV === 'production';
-  console.log(process.env.NODE_ENV);
+  const isProd = process.env.NODE_ENV === 'production';
   const redisClient = createClient({
-    url: `rediss://${process.env.REDIS_HOST}:6379`
+    url: isProd ? `rediss://${process.env.REDIS_HOST}:6379` : `redis://${process.env.REDIS_HOST}:6379`
   });
   redisClient.connect().catch(console.error);
   const redisStore = new RedisStore({
