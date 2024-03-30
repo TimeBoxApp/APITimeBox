@@ -19,6 +19,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { Public } from '../app.controller';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserIsOwnerGuard } from '../common/guards/user-is-owner.guard';
+import { Category } from '../category/entities/category.entity';
 
 @Controller('user')
 export class UserController {
@@ -70,6 +71,13 @@ export class UserController {
     const user = await this.userService.getUserForRequest(request);
 
     return await this.userService.getUserStats(user.id);
+  }
+
+  @Get('categories')
+  public async getUserCategories(@Req() request: UserRequest): Promise<Category[]> {
+    // const user = await this.userService.getUserForRequest(request);
+
+    return await this.userService.getUserCategories(request.user.userId);
   }
 
   @UseGuards(UserIsOwnerGuard)

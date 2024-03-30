@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { User } from '../user/entities/user.entity';
 import { Category } from './entities/category.entity';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class CategoryService {
@@ -16,10 +17,7 @@ export class CategoryService {
   private readonly logger: Logger = new Logger(CategoryService.name);
 
   async create(createCategoryDto: CreateCategoryDto, user: User) {
-    if (createCategoryDto.userId !== user.id)
-      throw new ForbiddenException('You can not create a category for another user');
-
-    const category = this.categoryRepository.create(createCategoryDto);
+    const category = this.categoryRepository.create({ ...createCategoryDto, userId: user.id });
 
     category.user = user;
 
@@ -45,10 +43,23 @@ export class CategoryService {
       where: { id: In(categories), userId }
     });
   }
-  //
-  // update(id: number, updateCategoryDto: UpdateCategoryDto) {
-  //   return `This action updates a #${id} category`;
-  // }
+
+  async update(id: number, userId: number, updateCategoryDto: UpdateCategoryDto) {
+    const category = await this.categoryRepository.find({
+      where: { id, userId }
+    });
+
+    if (!category) throw new NotFoundException(`Category ${id} not found`);
+
+    return await this.categoryRepository.save({ id, ...updateCategoryDto });
+  }
+
+  async getUserCategories(userId: number): Promise<Category[]> {
+    return await this.categoryRepository.find({
+      where: { userId },
+      select: { id: true, color: true, title: true, description: true, emoji: true }
+    });
+  }
 
   async remove(id: number, userId: number) {
     const category = await this.categoryRepository.findOne({

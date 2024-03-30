@@ -15,8 +15,10 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Week } from '../week/entities/week.entity';
 import { TaskService } from '../task/task.service';
+import { CategoryService } from '../category/category.service';
 import { WeekService } from '../week/week.service';
 import { PreferencesService } from '../preferences/preferences.service';
+import { Category } from '../category/entities/category.entity';
 
 @Injectable()
 export class UserService {
@@ -29,6 +31,8 @@ export class UserService {
     private readonly weekService: WeekService,
 
     private readonly taskService: TaskService,
+
+    private readonly categoryService: CategoryService,
 
     private readonly preferencesService: PreferencesService
   ) {}
@@ -171,6 +175,10 @@ export class UserService {
     ]);
 
     return { totalCompletedWeeks, totalCompletedTasks, totalBacklogItems };
+  }
+
+  public async getUserCategories(userId: number): Promise<Category[]> {
+    return await this.categoryService.getUserCategories(userId);
   }
 
   public async editUser(userId: number, updateUserDto: UpdateUserDto): Promise<object> {
