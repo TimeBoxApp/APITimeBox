@@ -1,8 +1,9 @@
-import { Controller, Post, Body, Param, Delete, Req } from '@nestjs/common';
+import { Controller, Post, Body, Param, Delete, Req, Patch } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UserRequest } from '../user/entities/user.entity';
 import { UserService } from '../user/user.service';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Controller('category')
 export class CategoryController {
@@ -29,10 +30,10 @@ export class CategoryController {
   //   return this.categoryService.findOne(+id);
   // }
   //
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
-  //   return this.categoryService.update(+id, updateCategoryDto);
-  // }
+  @Patch(':id')
+  async update(@Param('id') id: string, @Req() request: UserRequest, @Body() updateCategoryDto: UpdateCategoryDto) {
+    return await this.categoryService.update(+id, request.user.userId, updateCategoryDto);
+  }
 
   @Delete(':id')
   async remove(@Req() request: UserRequest, @Param('id') id: string) {
