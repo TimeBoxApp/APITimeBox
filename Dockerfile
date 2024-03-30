@@ -33,10 +33,24 @@ RUN apk add --no-cache libc6-compat
 
 # Set to production environment
 ENV NODE_ENV production
+ARG DATABASE_NAME
+ARG DATABASE_HOST
+ARG DATABASE_USER
+ARG DATABASE_PASSWORD
+ARG REDIS_HOST
+ARG REDIS_PORT
+ARG SESSION_SECRET
+ENV DATABASE_NAME $DATABASE_NAME
+ENV DATABASE_HOST $DATABASE_HOST
+ENV DATABASE_USER $DATABASE_USER
+ENV DATABASE_PASSWORD $DATABASE_PASSWORD
+ENV REDIS_HOST $REDIS_HOST
+ENV REDIS_PORT $REDIS_PORT
+ENV SESSION_SECRET $SESSION_SECRET
 
 # Re-create non-root user for Docker
-RUN addgroup --system --gid 1001 node
-RUN adduser --system --uid 1001 node
+RUN addgroup --system --gid 1001 node  || true
+RUN adduser --system --uid 1001 node  || true
 
 # In order to run `yarn build` we need access to the Nest CLI.
 # Nest CLI is a dev dependency.
@@ -63,10 +77,24 @@ RUN apk add --no-cache libc6-compat
 
 # Set to production environment
 ENV NODE_ENV production
+ARG DATABASE_NAME
+ARG DATABASE_HOST
+ARG DATABASE_USER
+ARG DATABASE_PASSWORD
+ARG REDIS_HOST
+ARG REDIS_PORT
+ARG SESSION_SECRET
+ENV DATABASE_NAME $DATABASE_NAME
+ENV DATABASE_HOST $DATABASE_HOST
+ENV DATABASE_USER $DATABASE_USER
+ENV DATABASE_PASSWORD $DATABASE_PASSWORD
+ENV REDIS_HOST $REDIS_HOST
+ENV REDIS_PORT $REDIS_PORT
+ENV SESSION_SECRET $SESSION_SECRET
 
 # Re-create non-root user for Docker
-RUN addgroup --system --gid 1001 node
-RUN adduser --system --uid 1001 node
+RUN addgroup --system --gid 1001 node  || true
+RUN adduser --system --uid 1001 node  || true
 
 # Copy only the necessary files
 COPY --chown=node:node --from=build /app/dist dist
@@ -75,4 +103,6 @@ COPY --chown=node:node --from=build /app/node_modules node_modules
 # Set Docker as non-root user
 USER node
 
-CMD ["node", "dist/main.js"]
+EXPOSE 3000
+
+CMD ["node", "dist/src/main.js"]
