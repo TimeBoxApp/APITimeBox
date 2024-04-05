@@ -87,11 +87,9 @@ export class UserController {
   }
 
   @UseGuards(UserIsOwnerGuard)
-  @Patch('/')
-  public async editUser(@Req() request: UserRequest, @Body() updateUserDto: UpdateUserDto) {
-    const user = await this.userService.getUserForRequest(request);
-
-    return await this.userService.editUser(user.id, updateUserDto);
+  @Patch('/:userId')
+  public async editUser(@Param('userId') userId: number, @Body() updateUserDto: UpdateUserDto) {
+    return await this.userService.editUser(userId, updateUserDto);
   }
 
   @UseGuards(UserIsOwnerGuard)

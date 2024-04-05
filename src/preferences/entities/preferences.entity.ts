@@ -21,9 +21,6 @@ export class Preferences {
   @Column({ type: 'tinyint', nullable: false, default: true })
   isPomodoroEnabled: boolean;
 
-  @Column({ type: 'tinyint', nullable: false, default: true })
-  isBookListEnabled: boolean;
-
   @Column({ type: 'varchar', length: 256, nullable: true, default: null })
   toDoColumnName: string;
 
@@ -41,6 +38,9 @@ export class Preferences {
 
   @Column({ type: 'datetime', nullable: true, default: null })
   googleAccessTokenUpdatedAt: Date | null;
+
+  @Column({ type: 'tinyint', nullable: false, default: false })
+  isCalendarConnected: boolean;
 
   @OneToOne(() => User, (user) => user.preferences)
   @JoinColumn({ name: 'userId' })

@@ -75,7 +75,7 @@ export class User extends BaseEntity {
   categories: Category[];
 
   @OneToOne(() => Preferences, (preferences) => preferences.user, { onDelete: 'CASCADE' })
-  preferences: User;
+  preferences: Preferences;
 
   @CreateDateColumn()
   createdAt: Date;
