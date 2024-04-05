@@ -61,6 +61,9 @@ export class CalendarService {
 
   async getGoogleCalendar(userId: number) {
     const accessToken = await this.preferencesService.getUserGoogleAccessToken(userId);
+
+    if (!accessToken) return null;
+
     const auth = new google.auth.OAuth2();
 
     auth.setCredentials({ access_token: accessToken });
@@ -71,6 +74,8 @@ export class CalendarService {
   async getCalendarEvents(userId: number) {
     const calendar = await this.getGoogleCalendar(userId);
     const { timeMin, timeMax } = this.getMaxAndMinTimeRange();
+
+    if (!calendar) throw new BadRequestException('User has no calendar connected');
 
     const { data } = await calendar.events.list({
       calendarId: 'primary',
@@ -97,6 +102,9 @@ export class CalendarService {
 
   async createEvent(userId: number, event: any) {
     const calendar = await this.getGoogleCalendar(userId);
+
+    if (!calendar) throw new BadRequestException('User has no calendar connected');
+
     const eventToCreate = {
       summary: event.title,
       source: { title: 'Timebox', url: this.configService.getClientUrl() },
@@ -114,6 +122,9 @@ export class CalendarService {
 
   async updateEvent(userId: number, eventId: string, eventData: any) {
     const calendar = await this.getGoogleCalendar(userId);
+
+    if (!calendar) throw new BadRequestException('User has no calendar connected');
+
     const eventToUpdate = {
       start: { dateTime: new Date(eventData.start).toISOString() },
       end: { dateTime: new Date(eventData.end).toISOString() }

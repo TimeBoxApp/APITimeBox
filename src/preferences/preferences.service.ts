@@ -26,7 +26,6 @@ export class PreferencesService {
       where: { userId },
       select: {
         isPomodoroEnabled: true,
-        isBookListEnabled: true,
         toDoColumnName: true,
         inProgressColumnName: true,
         doneColumnName: true
@@ -53,7 +52,8 @@ export class PreferencesService {
     await this.preferencesRepository.update(userId, {
       googleAccessToken: null,
       googleRefreshToken: null,
-      googleAccessTokenUpdatedAt: null
+      googleAccessTokenUpdatedAt: null,
+      isCalendarConnected: false
     });
 
     return { statusCode: HttpStatus.OK };

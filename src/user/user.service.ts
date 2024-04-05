@@ -115,6 +115,13 @@ export class UserService {
         lastName: true,
         role: true,
         dateFormat: true,
+        preferences: {
+          isPomodoroEnabled: true,
+          inProgressColumnName: true,
+          toDoColumnName: true,
+          doneColumnName: true,
+          isCalendarConnected: true
+        },
         categories: {
           id: true,
           title: true,
@@ -232,7 +239,8 @@ export class UserService {
     return await this.preferencesService.update(user.id, {
       googleAccessToken: token,
       googleRefreshToken: refreshToken,
-      googleAccessTokenUpdatedAt: new Date()
+      googleAccessTokenUpdatedAt: new Date(),
+      isCalendarConnected: true
     });
   }
 
