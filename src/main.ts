@@ -9,7 +9,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const app = await NestFactory.create(AppModule);
   const isProd = process.env.NODE_ENV === 'production';
   const redisClient = createClient({
     url: isProd ? `rediss://${process.env.REDIS_HOST}:6379` : `redis://${process.env.REDIS_HOST}:6379`
@@ -22,7 +22,7 @@ async function bootstrap() {
 
   app.use(helmet());
   app.enableCors({
-    origin: '*',
+    origin: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     credentials: true
   });
