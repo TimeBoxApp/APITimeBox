@@ -224,6 +224,18 @@ export class UserService {
     return userEntity;
   }
 
+  public async saveGoogleAccessToken(userId: number, token: string, refreshToken: string) {
+    const user = await this.getUserById(userId);
+
+    if (!user) throw new BadRequestException('User not found');
+
+    return await this.preferencesService.update(user.id, {
+      googleAccessToken: token,
+      googleRefreshToken: refreshToken,
+      googleAccessTokenUpdatedAt: new Date()
+    });
+  }
+
   private validatePasswordStrength(password: string): boolean {
     // At least one uppercase letter, one lowercase letter, one number and one special character
     const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;

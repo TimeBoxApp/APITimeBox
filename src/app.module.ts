@@ -19,6 +19,8 @@ import { TaskModule } from './task/task.module';
 import { WeekModule } from './week/week.module';
 import { CategoryModule } from './category/category.module';
 import { PreferencesModule } from './preferences/preferences.module';
+import { CalendarModule } from './calendar/calendar.module';
+import { ConfigService } from './config/config.service';
 
 @Module({
   imports: [
@@ -51,7 +53,8 @@ import { PreferencesModule } from './preferences/preferences.module';
     TaskModule,
     WeekModule,
     CategoryModule,
-    PreferencesModule
+    PreferencesModule,
+    CalendarModule
   ],
   controllers: [AppController],
   providers: [
@@ -71,7 +74,8 @@ import { PreferencesModule } from './preferences/preferences.module';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard
-    }
+    },
+    ConfigService
   ]
 })
 export class AppModule {
