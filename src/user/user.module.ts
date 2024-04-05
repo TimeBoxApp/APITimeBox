@@ -15,7 +15,7 @@ import { CategoryModule } from '../category/category.module';
     forwardRef(() => WeekModule),
     forwardRef(() => TaskModule),
     forwardRef(() => CategoryModule),
-    forwardRef(() => PreferencesModule)
+    PreferencesModule
   ],
   providers: [UserService],
   controllers: [UserController],

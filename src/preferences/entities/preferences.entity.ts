@@ -33,6 +33,15 @@ export class Preferences {
   @Column({ type: 'varchar', length: 256, nullable: true, default: null })
   doneColumnName: string;
 
+  @Column({ type: 'varchar', length: 256, nullable: true, default: null })
+  googleAccessToken: string | null;
+
+  @Column({ type: 'varchar', length: 256, nullable: true, default: null })
+  googleRefreshToken: string | null;
+
+  @Column({ type: 'datetime', nullable: true, default: null })
+  googleAccessTokenUpdatedAt: Date | null;
+
   @OneToOne(() => User, (user) => user.preferences)
   @JoinColumn({ name: 'userId' })
   user: User;
