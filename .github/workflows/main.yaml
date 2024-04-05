@@ -59,6 +59,8 @@ jobs:
             DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
             REDIS_HOST=${{ secrets.REDIS_HOST }}
             SESSION_SECRET=${{ secrets.SESSION_SECRET }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           tags: kkulykk/timebox-api:latest
   deploy:
     needs: build
