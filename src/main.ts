@@ -22,13 +22,7 @@ async function bootstrap() {
 
   app.use(helmet());
   app.enableCors({
-    origin: [
-      'http://localhost:8001',
-      'http://localhost:3001',
-      'https://timebox.guru/',
-      'https://www.timebox.guru/',
-      'https://api.timebox.guru/'
-    ],
+    origin: '*',
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     credentials: true
   });
