@@ -42,10 +42,6 @@ export class WeekService {
     return { statusCode: HttpStatus.CREATED };
   }
 
-  // findAll() {
-  //   return `This action returns all week`;
-  // }
-
   async findOne(id: number, userId: number) {
     const weekWithTasks = await this.weekRepository.findOne({
       where: { id },
@@ -146,8 +142,9 @@ export class WeekService {
       order: { tasks: { backlogRank: 'asc' } }
     });
     const backlogTasks = await this.taskService.findTasksWithoutWeekId(userId);
+    const currentWeekId = weeks.find((week) => week.status === WeekStatus.IN_PROGRESS)?.id;
 
-    return { weeks, backlogTasks };
+    return { weeks, backlogTasks, currentWeekId };
   }
 
   async findWeekWithoutTasks(id: number) {
@@ -166,31 +163,65 @@ export class WeekService {
     });
   }
 
-  async finishWeek(weekId: number, userId: number): Promise<object> {
+  async startWeek(weekId: number, userId: number): Promise<{ statusCode: HttpStatus }> {
     const week = await this.weekRepository.findOne({
-      where: { id: weekId, userId },
+      where: { id: weekId },
       select: {
         id: true,
+        userId: true,
         status: true,
         tasks: {
           id: true,
-          status: true,
+          backlogRank: true,
           boardRank: true,
+          status: true,
           weekId: true
         }
       },
-      relations: { tasks: true }
+      relations: { tasks: true },
+      order: { tasks: { backlogRank: 'ASC' } }
     });
+
+    if (!week) throw new NotFoundException('Week not found');
+
+    if (userId !== week.userId) throw new ForbiddenException('User cannot start this week');
+
+    if (week.status !== WeekStatus.PLANNED) throw new ForbiddenException('Week cannot be started');
+
+    await Promise.all([
+      this.taskService.moveTasksToBoard(week.tasks),
+      this.weekRepository.update(week.id, { status: WeekStatus.IN_PROGRESS })
+    ]);
+
+    return { statusCode: HttpStatus.OK };
+  }
+
+  async finishWeek(weekId: number, userId: number): Promise<object> {
+    const [week, backlogRank] = await Promise.all([
+      await this.weekRepository.findOne({
+        where: { id: weekId, userId },
+        select: {
+          id: true,
+          status: true,
+          tasks: {
+            id: true,
+            status: true,
+            boardRank: true,
+            weekId: true
+          }
+        },
+        relations: { tasks: true }
+      }),
+      this.taskService.getHighestBacklogRank(userId, null)
+    ]);
 
     if (!week) throw new NotFoundException('Week not found');
 
     if (week.status !== WeekStatus.IN_PROGRESS) throw new ForbiddenException('Week is not in progress');
 
-    week.status = WeekStatus.COMPLETED;
-
     await Promise.all([
-      this.taskService.moveTasksToBacklog(week.tasks, [TaskStatus.IN_PROGRESS, TaskStatus.TO_DO]),
-      this.weekRepository.save(week)
+      this.taskService.moveTasksToBacklog(week.tasks, [TaskStatus.IN_PROGRESS, TaskStatus.TO_DO], false, backlogRank),
+      this.weekRepository.update(week.id, { status: WeekStatus.COMPLETED })
     ]);
 
     return { statusCode: HttpStatus.OK };
@@ -209,31 +240,34 @@ export class WeekService {
   }
 
   async remove(id: number, userId: number) {
-    const week = await this.weekRepository.findOne({
-      where: { id, userId },
-      select: {
-        id: true,
-        status: true,
-        tasks: {
+    const [week, backlogRank] = await Promise.all([
+      this.weekRepository.findOne({
+        where: { id, userId },
+        select: {
           id: true,
           status: true,
-          boardRank: true,
-          weekId: true
-        }
-      },
-      relations: { tasks: true }
-    });
+          tasks: {
+            id: true,
+            status: true,
+            boardRank: true,
+            weekId: true
+          }
+        },
+        relations: { tasks: true }
+      }),
+      this.taskService.getHighestBacklogRank(userId, null)
+    ]);
 
     if (!week) throw new NotFoundException('Week not found');
 
     if (week.status === WeekStatus.IN_PROGRESS) throw new ForbiddenException('Week is in progress');
 
-    await this.taskService.moveTasksToBacklog(week.tasks, [
-      TaskStatus.CREATED,
-      TaskStatus.IN_PROGRESS,
-      TaskStatus.TO_DO,
-      TaskStatus.DONE
-    ]);
+    await this.taskService.moveTasksToBacklog(
+      week.tasks,
+      [TaskStatus.CREATED, TaskStatus.IN_PROGRESS, TaskStatus.TO_DO, TaskStatus.DONE],
+      true,
+      backlogRank
+    );
     await this.weekRepository.remove(week);
 
     return { statusCode: HttpStatus.OK };

@@ -59,11 +59,7 @@ export class UserController {
 
   @Get('backlog')
   public async getUserBacklog(@Req() request: UserRequest): Promise<object> {
-    const user = await this.userService.getUserForRequest(request);
-
-    if (!user) throw new UnauthorizedException();
-
-    return await this.userService.getUserBacklog(user.id);
+    return await this.userService.getUserBacklog(request.user.userId);
   }
 
   @Get('stats')
@@ -75,8 +71,6 @@ export class UserController {
 
   @Get('categories')
   public async getUserCategories(@Req() request: UserRequest): Promise<Category[]> {
-    // const user = await this.userService.getUserForRequest(request);
-
     return await this.userService.getUserCategories(request.user.userId);
   }
 

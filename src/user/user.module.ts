@@ -13,7 +13,7 @@ import { CategoryModule } from '../category/category.module';
   imports: [
     TypeOrmModule.forFeature([User]),
     forwardRef(() => WeekModule),
-    forwardRef(() => TaskModule),
+    TaskModule,
     forwardRef(() => CategoryModule),
     PreferencesModule
   ],

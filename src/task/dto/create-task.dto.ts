@@ -41,7 +41,4 @@ export class CreateTaskDto {
   @IsInt()
   @IsOptional()
   weekId: number;
-
-  @IsInt()
-  userId: number;
 }

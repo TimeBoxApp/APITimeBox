@@ -15,7 +15,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { Task, TaskStatus } from './entities/task.entity';
-import { User } from '../user/entities/user.entity';
 import { WeekService } from '../week/week.service';
 import { CategoryService } from '../category/category.service';
 
@@ -33,7 +32,7 @@ export class TaskService {
 
   private readonly logger: Logger = new Logger(TaskService.name);
 
-  async create(user: User, createTaskDto: CreateTaskDto) {
+  async create(userId: number, createTaskDto: CreateTaskDto) {
     const {
       title,
       description = null,
@@ -42,28 +41,36 @@ export class TaskService {
       weekId,
       priority = null,
       taskCategories,
-      userId,
       boardRank = null,
       backlogRank = null
     } = createTaskDto;
 
-    if (user.id !== userId) return new ForbiddenException('User cannot create task for another user');
-
     const task = new Task();
+
+    task.boardRank = boardRank;
+    task.backlogRank = backlogRank;
+
+    if (!backlogRank && !task.backlogRank) {
+      const highestBacklogRank = await this.getHighestBacklogRank(userId, weekId);
+
+      task.backlogRank = highestBacklogRank?.genNext().toString() || null;
+    }
+
+    if (!boardRank && !task.boardRank) {
+      const highestBoardRank = await this.getHighestBoardRank(userId, weekId, status);
+
+      task.boardRank = highestBoardRank?.genNext().toString() || null;
+    }
 
     if (weekId) {
       const week = await this.weekService.findWeekWithoutTasks(weekId);
 
-      if (!week) {
-        throw new NotFoundException('Week not found');
-      }
+      if (!week) throw new NotFoundException('Week not found');
 
-      if (week.userId !== user.id) {
-        throw new ForbiddenException('User cannot create task for another user');
-      }
+      if (week.userId !== userId) throw new ForbiddenException('User cannot create task for another user');
 
       task.weekId = weekId;
-    }
+    } else task.boardRank = null;
 
     if (taskCategories?.length) {
       const categoriesFound = await this.categoryService.findCategories(taskCategories, userId);
@@ -79,27 +86,11 @@ export class TaskService {
     task.status = status;
     task.priority = priority;
     task.userId = userId;
-    task.boardRank = boardRank;
-    task.backlogRank = backlogRank;
-
-    if (!backlogRank) {
-      task.backlogRank = await this.findBacklogRank(userId, weekId);
-    }
-
-    if (!boardRank) {
-      task.boardRank = await this.findBoardRank(userId, weekId, status);
-    }
 
     if (dueDate) task.dueDate = new Date(dueDate);
 
-    await this.taskRepository.save(task);
-
-    return task;
+    return await this.taskRepository.save(task);
   }
-
-  // findAll() {
-  //   return `This action returns all task`;
-  // }
 
   async findOne(id: number, userId: number) {
     const task: Task | null = await this.taskRepository.findOne({
@@ -222,7 +213,7 @@ export class TaskService {
 
     await this.taskRepository.delete({ id: taskId });
 
-    this.logger.log(`Successfully removed task ${taskId}`);
+    this.logger.log(`User ${userId} has successfully removed task ${taskId}`);
 
     return { statusCode: HttpStatus.OK, message: 'OK' };
   }
@@ -239,46 +230,70 @@ export class TaskService {
     });
   }
 
-  async findBacklogRank(userId: number, weekId: number): Promise<string> {
+  async getHighestBacklogRank(userId: number, weekId: number | null): Promise<LexoRank | undefined> {
     const task = await this.taskRepository.findOne({
       select: { id: true, backlogRank: true },
-      where: { userId, weekId },
+      where: { userId, weekId: weekId || IsNull() },
       order: {
-        backlogRank: 'ASC'
+        backlogRank: 'desc'
       }
     });
 
-    if (!task?.backlogRank) return LexoRank.min().toString();
+    if (!task?.backlogRank) return;
 
-    return LexoRank.parse(task.backlogRank).genNext().toString();
+    return LexoRank.parse(task.backlogRank);
   }
 
-  async findBoardRank(userId: number, weekId: number, status: TaskStatus): Promise<string> {
+  async getHighestBoardRank(userId: number, weekId: number, status: TaskStatus): Promise<LexoRank | undefined> {
     const task = await this.taskRepository.findOne({
-      select: { id: true, backlogRank: true },
-      where: { userId, weekId, status },
+      select: { id: true, boardRank: true },
+      where: { userId, weekId: weekId || IsNull(), status },
       order: {
-        backlogRank: 'ASC'
+        boardRank: 'desc'
       }
     });
 
-    if (!task?.backlogRank) return LexoRank.min().toString();
+    if (!task?.boardRank) return;
 
-    return LexoRank.parse(task.backlogRank).genNext().toString();
+    return LexoRank.parse(task.boardRank);
   }
 
-  async moveTasksToBacklog(tasks: Task[], statuses: TaskStatus[], resetStatus: boolean = false) {
+  async moveTasksToBacklog(
+    tasks: Task[],
+    statuses: TaskStatus[],
+    resetStatus: boolean = false,
+    startRank: LexoRank = LexoRank.min()
+  ) {
+    let previousLexoRank = startRank;
+
     for (const task of tasks) {
-      if (statuses.includes(task.status)) {
-        if (resetStatus) task.status = TaskStatus.CREATED;
+      if (!statuses.includes(task.status)) continue;
 
-        task.weekId = null;
-        task.boardRank = null;
-        task.backlogRank = null;
-      }
+      if (resetStatus) task.status = TaskStatus.CREATED;
+
+      const nextLexoRank = previousLexoRank.genNext();
+
+      task.weekId = null;
+      task.boardRank = null;
+      task.backlogRank = nextLexoRank.toString();
+      previousLexoRank = nextLexoRank;
     }
 
-    await this.taskRepository.save(tasks);
+    return await this.taskRepository.save(tasks);
+  }
+
+  async moveTasksToBoard(tasks: Task[], startRank: LexoRank = LexoRank.min()) {
+    let previousLexoRank = startRank;
+
+    for (const task of tasks) {
+      const nextLexoRank = previousLexoRank.genNext();
+
+      task.boardRank = nextLexoRank.toString();
+      task.status = TaskStatus.TO_DO;
+      previousLexoRank = nextLexoRank;
+    }
+
+    return await this.taskRepository.save(tasks);
   }
 
   /**

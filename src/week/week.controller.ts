@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Req } from '@nestjs/common';
 
 import { WeekService } from './week.service';
 import { UserRequest } from '../user/entities/user.entity';
@@ -6,7 +6,7 @@ import { UserService } from '../user/user.service';
 import { CreateWeekDto } from './dto/create-week.dto';
 import { UpdateWeekDto } from './dto/update-week.dto';
 
-@Controller('week')
+@Controller('weeks')
 export class WeekController {
   constructor(
     private readonly weekService: WeekService,
@@ -15,14 +15,9 @@ export class WeekController {
   ) {}
 
   @Post()
-  create(@Req() request: UserRequest, @Body() createWeekDto: CreateWeekDto) {
-    return this.weekService.create(createWeekDto, request.user.userId);
+  async create(@Req() request: UserRequest, @Body() createWeekDto: CreateWeekDto) {
+    return await this.weekService.create(createWeekDto, request.user.userId);
   }
-
-  // @Get()
-  // findAll() {
-  //   return this.weekService.findAll();
-  // }
 
   @Get(':id')
   async findOne(@Req() request: UserRequest, @Param('id') id: string) {
@@ -34,6 +29,11 @@ export class WeekController {
   async finishWeek(@Req() request: UserRequest, @Param('id') id: string) {
     const user = await this.userService.getUserForRequest(request);
     return this.weekService.finishWeek(+id, user.id);
+  }
+
+  @Post(':id/start')
+  async startWeek(@Req() request: UserRequest, @Param('id') id: string): Promise<{ statusCode: HttpStatus }> {
+    return this.weekService.startWeek(+id, request.user.userId);
   }
 
   @Patch(':id')

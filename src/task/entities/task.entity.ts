@@ -64,7 +64,7 @@ export class Task {
   @ManyToOne(() => Week, (week) => week.tasks)
   week: Week;
 
-  @ManyToMany(() => Category, (category) => category.tasks, { cascade: ['remove'] })
+  @ManyToMany(() => Category, (category) => category.tasks, { onDelete: 'CASCADE' })
   @JoinTable({ name: 'TaskCategory' })
   categories: Category[];
 

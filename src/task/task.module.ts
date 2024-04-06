@@ -6,15 +6,9 @@ import { TaskController } from './task.controller';
 import { Task } from './entities/task.entity';
 import { WeekModule } from '../week/week.module';
 import { CategoryModule } from '../category/category.module';
-import { UserModule } from '../user/user.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Task]),
-    forwardRef(() => UserModule),
-    forwardRef(() => WeekModule),
-    CategoryModule
-  ],
+  imports: [TypeOrmModule.forFeature([Task]), forwardRef(() => WeekModule), CategoryModule],
   controllers: [TaskController],
   providers: [TaskService],
   exports: [TaskService]
