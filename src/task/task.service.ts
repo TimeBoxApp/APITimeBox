@@ -17,6 +17,7 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { Task, TaskStatus } from './entities/task.entity';
 import { WeekService } from '../week/week.service';
 import { CategoryService } from '../category/category.service';
+import { WeekStatus } from '../week/entities/week.entity';
 
 @Injectable()
 export class TaskService {
@@ -47,19 +48,26 @@ export class TaskService {
 
     const task = new Task();
 
+    task.title = title;
+    task.description = description;
+    task.status = status;
+    task.priority = priority;
+    task.userId = userId;
     task.boardRank = boardRank;
     task.backlogRank = backlogRank;
 
-    if (!backlogRank && !task.backlogRank) {
+    if (dueDate) task.dueDate = new Date(dueDate);
+
+    if (!backlogRank) {
       const highestBacklogRank = await this.getHighestBacklogRank(userId, weekId);
 
-      task.backlogRank = highestBacklogRank?.genNext().toString() || null;
+      task.backlogRank = highestBacklogRank?.genNext().toString();
     }
 
-    if (!boardRank && !task.boardRank) {
+    if (!boardRank) {
       const highestBoardRank = await this.getHighestBoardRank(userId, weekId, status);
 
-      task.boardRank = highestBoardRank?.genNext().toString() || null;
+      task.boardRank = highestBoardRank?.genNext().toString();
     }
 
     if (weekId) {
@@ -67,7 +75,7 @@ export class TaskService {
 
       if (!week) throw new NotFoundException('Week not found');
 
-      if (week.userId !== userId) throw new ForbiddenException('User cannot create task for another user');
+      if (week.userId !== userId) throw new ForbiddenException('User cannot create task in this week');
 
       task.weekId = weekId;
     } else task.boardRank = null;
@@ -80,14 +88,6 @@ export class TaskService {
       task.categories = [];
       categoriesFound.forEach((cat) => task.categories.push(cat));
     }
-
-    task.title = title;
-    task.description = description;
-    task.status = status;
-    task.priority = priority;
-    task.userId = userId;
-
-    if (dueDate) task.dueDate = new Date(dueDate);
 
     return await this.taskRepository.save(task);
   }
@@ -142,11 +142,16 @@ export class TaskService {
       relations: { categories: true }
     });
 
-    return { tasks: this.groupTasksByStatus(tasks) };
+    const tasksFiltered = tasks.map((task) => ({
+      ...task,
+      categories: task.categories.map((category) => category.id)
+    }));
+
+    return { tasks: this.groupTasksByStatus(tasksFiltered) };
   }
 
   async findTasksWithoutWeekId(userId: number) {
-    return await this.taskRepository.find({
+    const tasks = await this.taskRepository.find({
       where: { weekId: IsNull(), userId },
       select: {
         id: true,
@@ -155,18 +160,21 @@ export class TaskService {
         priority: true,
         backlogRank: true,
         categories: {
-          id: true,
-          title: true,
-          emoji: true,
-          color: true
+          id: true
         }
       },
       relations: { categories: true },
       order: { backlogRank: 'ASC' }
     });
+
+    return tasks.map((task) => ({
+      ...task,
+      categories: task.categories.map((category) => category.id)
+    }));
   }
 
   async update(id: number, userId: number, updateTaskDto: UpdateTaskDto) {
+    const { dueDate, weekId, taskCategories } = updateTaskDto;
     const editedTask: Task | null = await this.taskRepository.findOne({
       where: { id },
       relations: { categories: true }
@@ -176,25 +184,38 @@ export class TaskService {
 
     if (userId !== editedTask.userId) throw new ForbiddenException('User cannot update this task');
 
-    const { taskCategories } = updateTaskDto;
-
-    if (taskCategories?.length) {
+    if (taskCategories) {
       const foundCategories = await this.categoryService.findCategories(taskCategories, userId);
 
-      if (!foundCategories.length) throw new NotFoundException('Categories not found');
+      if (taskCategories.length && !foundCategories.length) throw new NotFoundException('Categories not found');
 
       foundCategories.forEach((cat) => editedTask.categories.push(cat));
 
+      editedTask.categories = foundCategories;
+
       await this.taskRepository.save(editedTask);
+
+      delete updateTaskDto.taskCategories;
     }
 
-    delete updateTaskDto.taskCategories;
+    if (weekId) {
+      const week = await this.weekService.findWeekWithoutTasks(weekId);
+
+      if (week.userId !== userId) throw new ForbiddenException('User cannot move task to this week');
+
+      if (week.status === WeekStatus.IN_PROGRESS) {
+        const highestBoardRank = await this.getHighestBoardRank(userId, weekId, TaskStatus.TO_DO);
+
+        updateTaskDto.boardRank = highestBoardRank?.genNext().toString();
+        updateTaskDto.status = TaskStatus.TO_DO;
+      }
+    }
+
+    if (dueDate) updateTaskDto.dueDate = new Date(dueDate);
 
     await this.taskRepository.update({ id }, updateTaskDto);
 
-    this.logger.log(`Successfully updated task ${id}`);
-
-    return { statusCode: HttpStatus.OK, message: 'OK' };
+    return { statusCode: HttpStatus.OK };
   }
 
   async remove(taskId: number, userId: number) {
@@ -230,7 +251,7 @@ export class TaskService {
     });
   }
 
-  async getHighestBacklogRank(userId: number, weekId: number | null): Promise<LexoRank | undefined> {
+  async getHighestBacklogRank(userId: number, weekId: number | null): Promise<LexoRank> {
     const task = await this.taskRepository.findOne({
       select: { id: true, backlogRank: true },
       where: { userId, weekId: weekId || IsNull() },
@@ -239,12 +260,12 @@ export class TaskService {
       }
     });
 
-    if (!task?.backlogRank) return;
+    if (!task?.backlogRank) return LexoRank.middle();
 
     return LexoRank.parse(task.backlogRank);
   }
 
-  async getHighestBoardRank(userId: number, weekId: number, status: TaskStatus): Promise<LexoRank | undefined> {
+  async getHighestBoardRank(userId: number, weekId: number, status: TaskStatus): Promise<LexoRank> {
     const task = await this.taskRepository.findOne({
       select: { id: true, boardRank: true },
       where: { userId, weekId: weekId || IsNull(), status },
@@ -253,17 +274,17 @@ export class TaskService {
       }
     });
 
-    if (!task?.boardRank) return;
+    if (!task?.boardRank) return LexoRank.middle();
 
     return LexoRank.parse(task.boardRank);
   }
 
   async moveTasksToBacklog(
     tasks: Task[],
-    statuses: TaskStatus[],
+    statuses: TaskStatus[] = [TaskStatus.CREATED, TaskStatus.IN_PROGRESS, TaskStatus.TO_DO, TaskStatus.DONE],
     resetStatus: boolean = false,
-    startRank: LexoRank = LexoRank.min()
-  ) {
+    startRank: LexoRank = LexoRank.middle()
+  ): Promise<Task[]> {
     let previousLexoRank = startRank;
 
     for (const task of tasks) {
@@ -282,7 +303,7 @@ export class TaskService {
     return await this.taskRepository.save(tasks);
   }
 
-  async moveTasksToBoard(tasks: Task[], startRank: LexoRank = LexoRank.min()) {
+  async moveTasksToBoard(tasks: Task[], startRank: LexoRank = LexoRank.middle()) {
     let previousLexoRank = startRank;
 
     for (const task of tasks) {
@@ -300,7 +321,7 @@ export class TaskService {
    * Group tasks by status
    * @param tasks
    */
-  groupTasksByStatus = (tasks: Task[]) => {
+  groupTasksByStatus = (tasks: any[]) => {
     const groupedTasks = _.groupBy(tasks, 'status');
 
     for (const status in groupedTasks) {

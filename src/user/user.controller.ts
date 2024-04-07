@@ -33,31 +33,21 @@ export class UserController {
 
   @Get('all')
   @Roles([UserRole.ADMIN])
-  public async getUsers(@Req() request: UserRequest): Promise<User[]> {
-    const user = await this.userService.getUserForRequest(request);
-
-    if (!user) throw new UnauthorizedException();
-
+  public async getUsers(): Promise<User[]> {
     return await this.userService.getUsers();
   }
 
   @Get('me')
   public async getUserData(@Req() request: UserRequest): Promise<User | null> {
-    const user = await this.userService.getUserForRequest(request);
-
-    return await this.userService.getUserData(user.id);
+    return await this.userService.getUserData(request.user.userId);
   }
 
   @Get('currentWeek')
   public async getUserCurrentWeek(@Req() request: UserRequest): Promise<Week | object> {
-    const user = await this.userService.getUserForRequest(request);
-
-    if (!user) throw new UnauthorizedException();
-
-    return await this.userService.getUserCurrentWeek(user.id);
+    return await this.userService.getUserCurrentWeek(request.user.userId);
   }
 
-  @Get('backlog')
+  @Get('repository')
   public async getUserBacklog(@Req() request: UserRequest): Promise<object> {
     return await this.userService.getUserBacklog(request.user.userId);
   }

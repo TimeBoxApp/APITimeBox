@@ -101,10 +101,7 @@ export class WeekService {
           dueDate: true,
           boardRank: true,
           categories: {
-            id: true,
-            title: true,
-            emoji: true,
-            color: true
+            id: true
           }
         }
       }
@@ -132,19 +129,23 @@ export class WeekService {
           priority: true,
           backlogRank: true,
           categories: {
-            id: true,
-            title: true,
-            emoji: true,
-            color: true
+            id: true
           }
         }
       },
       order: { tasks: { backlogRank: 'asc' } }
     });
+    const transformedWeeks = weeks.map((week) => ({
+      ...week,
+      tasks: week.tasks.map((task) => ({
+        ...task,
+        categories: task.categories.map((category) => category.id)
+      }))
+    }));
     const backlogTasks = await this.taskService.findTasksWithoutWeekId(userId);
     const currentWeekId = weeks.find((week) => week.status === WeekStatus.IN_PROGRESS)?.id;
 
-    return { weeks, backlogTasks, currentWeekId };
+    return { weeks: transformedWeeks, backlogTasks, currentWeekId };
   }
 
   async findWeekWithoutTasks(id: number) {
@@ -220,7 +221,12 @@ export class WeekService {
     if (week.status !== WeekStatus.IN_PROGRESS) throw new ForbiddenException('Week is not in progress');
 
     await Promise.all([
-      this.taskService.moveTasksToBacklog(week.tasks, [TaskStatus.IN_PROGRESS, TaskStatus.TO_DO], false, backlogRank),
+      this.taskService.moveTasksToBacklog(
+        week.tasks,
+        [TaskStatus.CREATED, TaskStatus.IN_PROGRESS, TaskStatus.TO_DO],
+        true,
+        backlogRank
+      ),
       this.weekRepository.update(week.id, { status: WeekStatus.COMPLETED })
     ]);
 

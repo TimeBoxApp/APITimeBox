@@ -147,7 +147,10 @@ export class UserService {
         message: 'No current week found'
       };
 
-    const tasks = weekWithTasks.tasks;
+    const tasks = weekWithTasks.tasks.map((task) => ({
+      ...task,
+      categories: task.categories.map((category) => category.id)
+    }));
 
     weekWithTasks.tasks = this.taskService.groupTasksByStatus(tasks) as any;
 
