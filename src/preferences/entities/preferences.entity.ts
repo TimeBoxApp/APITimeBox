@@ -21,19 +21,19 @@ export class Preferences {
   @Column({ type: 'tinyint', nullable: false, default: true })
   isPomodoroEnabled: boolean;
 
-  @Column({ type: 'varchar', length: 256, nullable: true, default: null })
-  toDoColumnName: string;
+  @Column({ type: 'varchar', length: 255, nullable: true, default: null })
+  toDoColumnName: string | null;
 
-  @Column({ type: 'varchar', length: 256, nullable: true, default: null })
-  inProgressColumnName: string;
+  @Column({ type: 'varchar', length: 255, nullable: true, default: null })
+  inProgressColumnName: string | null;
 
-  @Column({ type: 'varchar', length: 256, nullable: true, default: null })
-  doneColumnName: string;
+  @Column({ type: 'varchar', length: 255, nullable: true, default: null })
+  doneColumnName: string | null;
 
-  @Column({ type: 'varchar', length: 256, nullable: true, default: null })
+  @Column({ type: 'varchar', length: 255, nullable: true, default: null })
   googleAccessToken: string | null;
 
-  @Column({ type: 'varchar', length: 256, nullable: true, default: null })
+  @Column({ type: 'varchar', length: 255, nullable: true, default: null })
   googleRefreshToken: string | null;
 
   @Column({ type: 'datetime', nullable: true, default: null })

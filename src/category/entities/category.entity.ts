@@ -26,10 +26,10 @@ export class Category {
   @Column({ type: 'varchar', length: 255, nullable: true })
   description: string | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 64, nullable: true })
   emoji: string | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 64, nullable: true })
   color: string | null;
 
   @ManyToOne(() => User, (user) => user.id)

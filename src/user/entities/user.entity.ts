@@ -28,6 +28,12 @@ export enum UserRole {
   ADMIN = 'admin'
 }
 
+export enum DateFormat {
+  'DD.MM.YYYY' = 'DD.MM.YYYY',
+  'MM/DD/YYYY' = 'MM/DD/YYYY',
+  'MMM DD, YYYY' = 'MMM DD, YYYY'
+}
+
 export type UserRoleType = UserRole.ADMIN | UserRole.USER;
 
 export enum UserSex {
@@ -53,11 +59,8 @@ export class User extends BaseEntity {
   @Column()
   password: string;
 
-  @Column({ default: null })
-  locale: string;
-
-  @Column({ default: null })
-  dateFormat: string;
+  @Column('enum', { enum: DateFormat, default: DateFormat['DD.MM.YYYY'] })
+  dateFormat: DateFormat;
 
   @Column('enum', { enum: UserStatus, default: UserStatus.ACTIVE })
   status: UserStatus;

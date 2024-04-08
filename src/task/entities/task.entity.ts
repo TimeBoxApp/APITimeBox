@@ -31,7 +31,7 @@ export class Task {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ nullable: false })
+  @Column({ type: 'varchar', length: 255, nullable: false })
   title: string;
 
   @Column({ type: 'varchar', length: 1024, nullable: true })
@@ -46,17 +46,20 @@ export class Task {
   @Column({ type: 'date', nullable: true })
   dueDate: Date | null;
 
-  @Column({ type: 'varchar', length: 512, nullable: true })
+  @Column({ type: 'varchar', length: 64, nullable: true })
   boardRank: string | null;
 
-  @Column({ type: 'varchar', length: 512, nullable: true })
+  @Column({ type: 'varchar', length: 64, nullable: true })
   backlogRank: string | null;
 
   @Column({ nullable: true })
   weekId: number | null;
 
-  @Column()
+  @Column({ nullable: false })
   userId: number;
+
+  @Column({ type: 'varchar', length: 128, nullable: true })
+  calendarEventId: string | null;
 
   @ManyToOne(() => User, (user) => user.id)
   user: User;

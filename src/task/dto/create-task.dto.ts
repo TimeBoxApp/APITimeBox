@@ -41,4 +41,8 @@ export class CreateTaskDto {
   @IsInt()
   @IsOptional()
   weekId: number;
+
+  @IsOptional()
+  @IsString()
+  calendarEventId: string | null;
 }

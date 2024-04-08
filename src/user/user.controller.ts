@@ -1,15 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  Req,
-  UnauthorizedException,
-  UseGuards
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 
 import { UserService } from './user.service';
 import { User, UserRole, UserRequest } from './entities/user.entity';
@@ -21,12 +10,12 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { UserIsOwnerGuard } from '../common/guards/user-is-owner.guard';
 import { Category } from '../category/entities/category.entity';
 
-@Controller('user')
+@Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Public()
-  @Post('create')
+  @Post('/')
   public async createUser(@Body() createUserDto: CreateUserDto): Promise<object> {
     return await this.userService.createUser(createUserDto);
   }
@@ -54,9 +43,7 @@ export class UserController {
 
   @Get('stats')
   public async getUserStats(@Req() request: UserRequest): Promise<object> {
-    const user = await this.userService.getUserForRequest(request);
-
-    return await this.userService.getUserStats(user.id);
+    return await this.userService.getUserStats(request.user.userId);
   }
 
   @Get('categories')
@@ -77,12 +64,8 @@ export class UserController {
   }
 
   @UseGuards(UserIsOwnerGuard)
-  @Delete('/delete/:userId')
-  public async deleteUser(@Req() request: UserRequest, @Param('userId') userId: number): Promise<string> {
-    const user = await this.userService.getUserForRequest(request);
-
-    if (!user) throw new UnauthorizedException();
-
+  @Delete('/:userId')
+  public async deleteUser(@Param('userId') userId: number): Promise<string> {
     return await this.userService.deleteUser(userId);
   }
 }
