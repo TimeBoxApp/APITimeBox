@@ -126,7 +126,7 @@ export class WeekService {
       }
     });
 
-    if (!week) throw new NotFoundException('No week found');
+    if (!week) return [];
 
     return week.tasks;
   }
