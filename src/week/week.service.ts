@@ -1,5 +1,6 @@
 import { In, Repository } from 'typeorm';
 import {
+  BadRequestException,
   ForbiddenException,
   forwardRef,
   HttpStatus,
@@ -108,6 +109,28 @@ export class WeekService {
     });
   }
 
+  async findTasksForCalendar(userId: number) {
+    const week = await this.weekRepository.findOne({
+      where: { userId, status: WeekStatus.IN_PROGRESS },
+      relations: {
+        tasks: true
+      },
+      select: {
+        id: true,
+        tasks: {
+          id: true,
+          title: true,
+          status: true,
+          calendarEventId: true
+        }
+      }
+    });
+
+    if (!week) throw new NotFoundException('No week found');
+
+    return week.tasks;
+  }
+
   async findBacklogForUser(userId: number) {
     const weeks = await this.weekRepository.find({
       where: { userId, status: In([WeekStatus.IN_PROGRESS, WeekStatus.PLANNED]) },
@@ -165,25 +188,35 @@ export class WeekService {
   }
 
   async startWeek(weekId: number, userId: number): Promise<{ statusCode: HttpStatus }> {
-    const week = await this.weekRepository.findOne({
-      where: { id: weekId },
-      select: {
-        id: true,
-        userId: true,
-        status: true,
-        tasks: {
+    const [week, weeksInProgressCount] = await Promise.all([
+      this.weekRepository.findOne({
+        where: { id: weekId },
+        select: {
           id: true,
-          backlogRank: true,
-          boardRank: true,
+          userId: true,
           status: true,
-          weekId: true
+          tasks: {
+            id: true,
+            backlogRank: true,
+            boardRank: true,
+            status: true,
+            weekId: true
+          }
+        },
+        relations: { tasks: true },
+        order: { tasks: { backlogRank: 'ASC' } }
+      }),
+      this.weekRepository.count({
+        where: {
+          userId,
+          status: WeekStatus.IN_PROGRESS
         }
-      },
-      relations: { tasks: true },
-      order: { tasks: { backlogRank: 'ASC' } }
-    });
+      })
+    ]);
 
     if (!week) throw new NotFoundException('Week not found');
+
+    if (weeksInProgressCount !== 0) throw new BadRequestException('User already has weeks in progress');
 
     if (userId !== week.userId) throw new ForbiddenException('User cannot start this week');
 
@@ -218,7 +251,7 @@ export class WeekService {
 
     if (!week) throw new NotFoundException('Week not found');
 
-    if (week.status !== WeekStatus.IN_PROGRESS) throw new ForbiddenException('Week is not in progress');
+    if (week.status !== WeekStatus.IN_PROGRESS) throw new BadRequestException('Week is not in progress');
 
     await Promise.all([
       this.taskService.moveTasksToBacklog(

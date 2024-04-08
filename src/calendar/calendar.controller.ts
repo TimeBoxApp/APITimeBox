@@ -6,11 +6,15 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { Public } from '../app.controller';
 import { ConfigService } from '../config/config.service';
+import { Task } from '../task/entities/task.entity';
+import { WeekService } from '../week/week.service';
 
 @Controller('calendar')
 export class CalendarController {
   constructor(
     private readonly calendarService: CalendarService,
+
+    private readonly weekService: WeekService,
 
     private readonly configService: ConfigService
   ) {}
@@ -37,6 +41,11 @@ export class CalendarController {
   @Get('events')
   async getEvents(@Req() request: UserRequest): Promise<any> {
     return await this.calendarService.getCalendarEvents(request.user.userId);
+  }
+
+  @Get('tasks')
+  async getTasks(@Req() request: UserRequest): Promise<Task[]> {
+    return await this.weekService.findTasksForCalendar(request.user.userId);
   }
 
   @Post('event')

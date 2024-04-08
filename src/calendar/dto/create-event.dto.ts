@@ -1,4 +1,4 @@
-import { IsString, IsOptional, Length, IsBoolean, IsDateString } from 'class-validator';
+import { IsString, IsOptional, Length, IsBoolean, IsDateString, IsInt } from 'class-validator';
 
 export class CreateEventDto {
   @IsString()
@@ -10,6 +10,9 @@ export class CreateEventDto {
 
   @IsDateString()
   end: Date;
+
+  @IsInt()
+  taskId: number;
 
   @IsBoolean()
   @IsOptional()

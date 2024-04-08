@@ -1,9 +1,11 @@
 import { google } from 'googleapis';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 
 import { PreferencesService } from '../preferences/preferences.service';
 import { UserService } from '../user/user.service';
 import { ConfigService } from '../config/config.service';
+import { TaskService } from '../task/task.service';
+import { CreateEventDto } from './dto/create-event.dto';
 
 @Injectable()
 export class CalendarService {
@@ -11,6 +13,8 @@ export class CalendarService {
     private readonly preferencesService: PreferencesService,
 
     private readonly userService: UserService,
+
+    private readonly taskService: TaskService,
 
     private readonly configService: ConfigService
   ) {}
@@ -95,15 +99,20 @@ export class CalendarService {
         id: event.id,
         title: event.summary,
         start: event.start,
-        end: event.end
+        end: event.end,
+        isFromTimebox: event.source?.title ? event.source.title.toLowerCase().includes('timebox') : false
       };
     });
   }
 
-  async createEvent(userId: number, event: any) {
+  async createEvent(userId: number, event: CreateEventDto) {
     const calendar = await this.getGoogleCalendar(userId);
 
     if (!calendar) throw new BadRequestException('User has no calendar connected');
+
+    const task = await this.taskService.findOne(event.taskId, userId);
+
+    if (userId !== task.userId) throw new ForbiddenException('User cannot use this task');
 
     const eventToCreate = {
       summary: event.title,
@@ -114,8 +123,10 @@ export class CalendarService {
 
     const { data } = await calendar.events.insert({
       calendarId: 'primary',
-      requestBody: eventToCreate
+      requestBody: eventToCreate as any
     });
+
+    await this.taskService.update(task.id, userId, { calendarEventId: data.id });
 
     return { id: data.id };
   }
