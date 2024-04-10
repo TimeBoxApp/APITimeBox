@@ -5,6 +5,12 @@
       "name": "api-timebox",
       "image": "513123869880.dkr.ecr.eu-central-1.amazonaws.com/timebox-api:latest",
       "cpu": 0,
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost/api/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3
+      },
       "portMappings": [
         {
           "name": "api-timebox-3000-tcp",
