@@ -1,9 +1,10 @@
-name: Build on DockerHub and Deploy to AWS
+name: Build and Deploy to AWS
 
 on:
   push:
     branches:
       - main
+
 env:
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -15,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -27,6 +28,8 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+        with:
+          mask-password: 'true'
 
       - name: Build, tag, and push the image to Amazon ECR
         id: build-image
@@ -46,63 +49,20 @@ jobs:
             --build-arg GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} \
             .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-definition
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+          task-definition: api-task-definition.json
+          container-name: timebox-api
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
-          context: ./
-          push: true
-          target: prod
-          dockerfile: ./Dockerfile
-          build-args: |
-            DATABASE_NAME=${{ secrets.DATABASE_NAME }}
-            DATABASE_HOST=${{ secrets.DATABASE_HOST }}
-            DATABASE_USER=${{ secrets.DATABASE_USER }}
-            DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
-            REDIS_HOST=${{ secrets.REDIS_HOST }}
-            SESSION_SECRET=${{ secrets.SESSION_SECRET }}
-            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
-            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-          tags: kkulykk/timebox-api:latest
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ env.DOCKERHUB_USERNAME }}
-          password: ${{ env.DOCKERHUB_TOKEN }}
-
-      - name: Set permissions for private key
-        run: |
-          echo "${{ env.AWS_PRIVATE_KEY }}" > key.pem
-          chmod 600 key.pem
-
-      - name: Remove all Docker images
-        run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ env.SERVER_ADDRESS }} 'sudo docker rmi $(sudo docker images -q) -f || true'
-
-      - name: Pull Docker image
-        run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ env.SERVER_ADDRESS }} 'sudo docker pull kkulykk/timebox-api:latest'
-
-      - name: Stop running container
-        run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ env.SERVER_ADDRESS }} 'sudo docker stop timebox-api || true'
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ env.SERVER_ADDRESS }} 'sudo docker rm timebox-api || true'
-
-      - name: Run new container
-        run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem ${{ env.SERVER_ADDRESS }} 'sudo docker run -d --name timebox-api -p 80:3000 kkulykk/timebox-api:latest'
+          task-definition: ${{ steps.task-definition.outputs.task-definition }}
+          service: api-timebox
+          cluster: TimeboxApiCluster
+          wait-for-service-stability: true
