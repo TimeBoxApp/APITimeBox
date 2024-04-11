@@ -248,10 +248,10 @@ export class UserService {
   }
 
   private validatePasswordStrength(password: string): boolean {
-    // At least one uppercase letter, one lowercase letter, one number and one special character
-    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    // At least one uppercase letter, one lowercase letter, one number, and one special character
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{8,}$/;
 
-    return strongPasswordRegex.test(password) && password.length > 7;
+    return strongPasswordRegex.test(password);
   }
 
   private async hashPassword(password: string): Promise<string> {
