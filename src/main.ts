@@ -26,7 +26,6 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     credentials: true
   });
-  app.setGlobalPrefix('api');
 
   app.use(
     session({
