@@ -30,6 +30,7 @@ FROM node:21-alpine as build
 
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache curl
 
 # Set to production environment
 ENV NODE_ENV production
@@ -78,6 +79,7 @@ FROM node:21-alpine as prod
 
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache curl
 
 # Set to production environment
 ENV NODE_ENV production
