@@ -50,4 +50,4 @@ jobs:
           aws ecs update-service --cluster TimeboxApiCluster --service timebox-api --force-new-deployment --query 'service.deployments' --output json
 
       - name: Wait for service stability
-        run: wait 30 && echo "Done"
+        run: sleep 30s && echo "Done"
