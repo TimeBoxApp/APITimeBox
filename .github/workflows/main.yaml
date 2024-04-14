@@ -47,7 +47,7 @@ jobs:
 
       - name: Force new deployment
         run: |
-          aws ecs update-service --cluster TimeboxApiCluster --service api-timebox --force-new-deployment --query 'service.deployments' --output json
+          aws ecs update-service --cluster TimeboxApiCluster --service timebox-api --force-new-deployment --query 'service.deployments' --output json
 
       - name: Wait for service stability
         run: |
