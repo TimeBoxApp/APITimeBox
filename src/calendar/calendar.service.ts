@@ -22,7 +22,7 @@ export class CalendarService {
   public readonly googleOauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    `${this.configService.getServerUrl()}/api/calendar/google/callback`
+    `${this.configService.getServerUrl()}/calendar/google/callback`
   );
 
   async getGoogleCalendarRedirectUrl(userId: number): Promise<{ redirectUrl: string }> {
