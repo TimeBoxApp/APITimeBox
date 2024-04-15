@@ -5,7 +5,7 @@ import { UserRequest } from '../user/entities/user.entity';
 import { UserService } from '../user/user.service';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
-@Controller('category')
+@Controller('categories')
 export class CategoryController {
   constructor(
     private readonly categoryService: CategoryService,
