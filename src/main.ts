@@ -5,6 +5,7 @@ import * as passport from 'passport';
 import { NestFactory } from '@nestjs/core';
 import { createClient } from 'redis';
 import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './app.module';
 
@@ -19,6 +20,14 @@ async function bootstrap() {
     client: redisClient,
     prefix: 'tb-session:'
   });
+  const config = new DocumentBuilder()
+    .setTitle('TimeBox API')
+    .setDescription('The TimeBox API description')
+    .setVersion('1.0')
+    .addTag('timebox')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
 
   app.use(helmet());
   app.enableCors({

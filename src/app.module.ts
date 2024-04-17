@@ -4,7 +4,6 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -33,23 +32,23 @@ import { ConfigService } from './config/config.service';
     HealthModule,
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot(dataSourceOptions),
-    ThrottlerModule.forRoot([
-      {
-        name: 'short',
-        ttl: 1000,
-        limit: 3
-      },
-      {
-        name: 'medium',
-        ttl: 10000,
-        limit: 20
-      },
-      {
-        name: 'long',
-        ttl: 60000,
-        limit: 100
-      }
-    ]),
+    // ThrottlerModule.forRoot([
+    //   {
+    //     name: 'short',
+    //     ttl: 1000,
+    //     limit: 3
+    //   },
+    //   {
+    //     name: 'medium',
+    //     ttl: 10000,
+    //     limit: 20
+    //   },
+    //   {
+    //     name: 'long',
+    //     ttl: 60000,
+    //     limit: 100
+    //   }
+    // ]),
     TaskModule,
     WeekModule,
     CategoryModule,
@@ -71,10 +70,10 @@ import { ConfigService } from './config/config.service';
       provide: APP_GUARD,
       useClass: RolesGuard
     },
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard
-    },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: ThrottlerGuard
+    // },
     ConfigService
   ]
 })
